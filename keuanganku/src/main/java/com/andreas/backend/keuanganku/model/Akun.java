@@ -1,16 +1,17 @@
 package com.andreas.backend.keuanganku.model;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 public class Akun {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
     private String nama;
     private BigDecimal saldo;
     private LocalDateTime dibuatPada;
@@ -18,6 +19,14 @@ public class Akun {
     @ManyToOne
     @JoinColumn(name = "id_pengguna")
     private Pengguna pengguna;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
     public String getNama() {
         return nama;
@@ -43,11 +52,5 @@ public class Akun {
         this.dibuatPada = dibuatPada;
     }
 
-    public Pengguna getPengguna() {
-        return pengguna;
-    }
-
-    public void setPengguna(Pengguna pengguna) {
-        this.pengguna = pengguna;
-    }
+    // Getter dan Setter
 }

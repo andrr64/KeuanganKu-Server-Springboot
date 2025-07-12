@@ -1,20 +1,29 @@
 package com.andreas.backend.keuanganku.model;
 
 import jakarta.persistence.*;
-
 import java.util.UUID;
 
 @Entity
 public class Kategori {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
     private String nama;
-    private Integer jenis; // "pemasukan" atau "pengeluaran"
+    private Integer jenis; // 1 = pemasukan, 2 = pengeluaran
 
     @ManyToOne
     @JoinColumn(name = "id_pengguna")
     private Pengguna pengguna;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
     public String getNama() {
         return nama;
@@ -32,11 +41,5 @@ public class Kategori {
         this.jenis = jenis;
     }
 
-    public Pengguna getPengguna() {
-        return pengguna;
-    }
-
-    public void setPengguna(Pengguna pengguna) {
-        this.pengguna = pengguna;
-    }
+    // Getter dan Setter
 }

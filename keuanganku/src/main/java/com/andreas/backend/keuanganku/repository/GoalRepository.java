@@ -8,5 +8,6 @@ import java.util.UUID;
 
 public interface GoalRepository extends JpaRepository<Goal, UUID> {
     List<Goal> findByPengguna_Id(UUID idPengguna);
+
 }
 

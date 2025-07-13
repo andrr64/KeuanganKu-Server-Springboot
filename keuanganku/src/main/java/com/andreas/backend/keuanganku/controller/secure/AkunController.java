@@ -1,17 +1,22 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
+import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.AkunRequest;
+import com.andreas.backend.keuanganku.dto.request.UpdateNamaAkunRequest;
+import com.andreas.backend.keuanganku.dto.response.AkunResponse;
+import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.service.AkunService;
 
@@ -23,8 +28,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AkunController {
 
-    private static final Logger log = LoggerFactory.getLogger(AkunController.class);
-
     private final AkunService akunService;
 
     @PostMapping
@@ -32,15 +35,34 @@ public class AkunController {
             @CurrentUserId UUID idPengguna,
             @Valid @RequestBody AkunRequest akunRequest
     ) {
-
-        Akun akun = akunService.tambahAkun(idPengguna, akunRequest);
-
-        return ResponseEntity.ok(
-                new Object() {
-                    public final UUID id = akun.getId();
-                    public final String nama = akun.getNama();
-                    public final Object saldo = akun.getSaldo();
-                }
-        );
+        akunService.tambahAkun(idPengguna, akunRequest);
+        return ResponseEntity.ok(new GeneralResponse<>("Akun berhasil ditambahkan"));
     }
+
+    @PutMapping("/update-nama/{id_akun}")
+    public ResponseEntity<?> updateNamaAkun(
+            @CurrentUserId UUID idPengguna,
+            @PathVariable("id_akun") UUID idAkun,
+            @Valid @RequestBody UpdateNamaAkunRequest req
+    ) {
+        akunService.updateNamaAkun(idPengguna, idAkun, req.getNama());
+        return ResponseEntity.ok(new GeneralResponse<>("Nama akun berhasil diperbarui"));
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getSemuaAkun(@CurrentUserId UUID idPengguna) {
+        List<Akun> daftarAkun = akunService.getSemuaAkun(idPengguna);
+
+        List<AkunResponse> responseList = daftarAkun.stream()
+                .map(akun -> new AkunResponse(
+                akun.getId(),
+                akun.getNama(),
+                akun.getSaldo(),
+                akun.getDibuatPada()
+        ))
+                .toList();
+
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", responseList));
+    }
+
 }

@@ -8,4 +8,4 @@ public class KeuangankuApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(KeuangankuApplication.class, args);
 	}
-}
+} 

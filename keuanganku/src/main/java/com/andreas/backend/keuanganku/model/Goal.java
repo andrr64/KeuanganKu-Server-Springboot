@@ -1,11 +1,16 @@
 package com.andreas.backend.keuanganku.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
+@Getter
+@Setter
 public class Goal {
 
     @Id
@@ -21,62 +26,4 @@ public class Goal {
     private BigDecimal terkumpul;
     private LocalDate tanggalTarget;
     private Boolean tercapai;
-
-    public Pengguna getPengguna() {
-        return pengguna;
-    }
-
-    public void setPengguna(Pengguna pengguna) {
-        this.pengguna = pengguna;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getNama() {
-        return nama;
-    }
-
-    public void setNama(String nama) {
-        this.nama = nama;
-    }
-
-    public BigDecimal getTarget() {
-        return target;
-    }
-
-    public void setTarget(BigDecimal target) {
-        this.target = target;
-    }
-
-    public BigDecimal getTerkumpul() {
-        return terkumpul;
-    }
-
-    public void setTerkumpul(BigDecimal terkumpul) {
-        this.terkumpul = terkumpul;
-    }
-
-    public LocalDate getTanggalTarget() {
-        return tanggalTarget;
-    }
-
-    public void setTanggalTarget(LocalDate tanggalTarget) {
-        this.tanggalTarget = tanggalTarget;
-    }
-
-    public Boolean getTercapai() {
-        return tercapai;
-    }
-
-    public void setTercapai(Boolean tercapai) {
-        this.tercapai = tercapai;
-    }
-
-    // Getter dan Setter
 }

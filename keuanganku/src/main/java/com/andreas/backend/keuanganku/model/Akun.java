@@ -10,8 +10,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 public class Akun {
 
     @Id
@@ -26,43 +30,4 @@ public class Akun {
     @JoinColumn(name = "id_pengguna")
     private Pengguna pengguna;
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getNama() {
-        return nama;
-    }
-
-    public void setNama(String nama) {
-        this.nama = nama;
-    }
-
-    public BigDecimal getSaldo() {
-        return saldo;
-    }
-
-    public void setSaldo(BigDecimal saldo) {
-        this.saldo = saldo;
-    }
-
-    public LocalDateTime getDibuatPada() {
-        return dibuatPada;
-    }
-
-    public void setDibuatPada(LocalDateTime dibuatPada) {
-        this.dibuatPada = dibuatPada;
-    }
-
-    public void setPengguna(Pengguna pengguna) {
-        this.pengguna = pengguna;
-    }
-
-    public Pengguna getPengguna() {
-        return pengguna;
-    }
 }

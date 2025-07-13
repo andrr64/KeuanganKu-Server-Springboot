@@ -1,14 +1,17 @@
 package com.andreas.backend.keuanganku;
 
-public class SysVar {
-    public static int PENGELUARAN = 1;
-    public static int PEMASUKAN = 2;
+import java.util.Objects;
 
-    public static boolean isPengeluaran(int jenis) {
-        return jenis == PENGELUARAN;
+public class SysVar {
+
+    public static final int PENGELUARAN = 1;
+    public static final int PEMASUKAN = 2;
+
+    public static boolean isPengeluaran(Integer jenis) {
+        return Objects.equals(jenis, PENGELUARAN);
     }
 
-    public static boolean isPemasukan(int jenis) {
-        return jenis == PEMASUKAN;
+    public static boolean isPemasukan(Integer jenis) {
+        return Objects.equals(jenis, PEMASUKAN);
     }
 }

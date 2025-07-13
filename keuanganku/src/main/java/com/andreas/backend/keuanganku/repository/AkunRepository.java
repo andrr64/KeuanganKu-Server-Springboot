@@ -10,8 +10,15 @@ import java.util.UUID;
 
 @Repository
 public interface AkunRepository extends JpaRepository<Akun, UUID> {
+
     List<Akun> findByPengguna_Id(UUID idPengguna);
+
+    List<Akun> findByPenggunaId(UUID idPengguna);
+
     Optional<Akun> findByNamaAndPenggunaId(String nama, UUID penggunaId);
+
     boolean existsByNamaIgnoreCaseAndPenggunaId(String nama, UUID penggunaId);
+
     boolean existsByNamaAndPenggunaId(String nama, UUID penggunaId);
+
 }

@@ -1,6 +1,7 @@
 package com.andreas.backend.keuanganku.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,4 +40,23 @@ public class AkunServiceImpl implements AkunService {
 
         return akunRepository.save(akun);
     }
+
+    @Override
+    public void updateNamaAkun(UUID idPengguna, UUID idAkun, String namaBaru) {
+        Akun akun = akunRepository.findById(idAkun)
+                .orElseThrow(() -> new EntityNotFoundException("Akun tidak ditemukan"));
+
+        if (!akun.getPengguna().getId().equals(idPengguna)) {
+            throw new SecurityException("Anda tidak memiliki akses ke akun ini");
+        }
+
+        akun.setNama(namaBaru);
+        akunRepository.save(akun);
+    }
+
+    @Override
+    public List<Akun> getSemuaAkun(UUID idPengguna) {
+        return akunRepository.findByPenggunaId(idPengguna);
+    }
+
 }

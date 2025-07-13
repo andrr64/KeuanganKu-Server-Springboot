@@ -9,7 +9,10 @@ import java.util.UUID;
 
 @Repository
 public interface KategoriRepository extends JpaRepository<Kategori, UUID> {
-    List<Kategori> findByPengguna_Id(UUID idPengguna);
-    List<Kategori> findByJenis(Integer jenis); // 1: pengeluaran, 2: pemasukan
-}
 
+    List<Kategori> findByPenggunaId(UUID idPengguna);
+
+    List<Kategori> findByJenis(Integer jenis); // 1: pengeluaran, 2: pemasukan
+
+    List<Kategori> findByPenggunaIdAndJenis(UUID idPengguna, Integer jenis);
+}

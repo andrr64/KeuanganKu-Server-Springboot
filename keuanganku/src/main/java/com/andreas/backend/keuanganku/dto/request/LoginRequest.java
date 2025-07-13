@@ -2,11 +2,9 @@ package com.andreas.backend.keuanganku.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class LoginRequest {
     @Email(message = "Format email tidak valid")
     @NotBlank(message = "Email wajib diisi")

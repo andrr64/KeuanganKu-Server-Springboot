@@ -8,7 +8,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
 import io.jsonwebtoken.JwtException;
@@ -61,4 +63,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(401).body(Map.of("message", "Token tidak valid"));
     }
 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String paramName = ex.getName();
+        String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+
+        String message = String.format("Parameter '%s' harus bertipe %s yang valid", paramName, expectedType);
+
+        return ResponseEntity.badRequest().body(
+                new GeneralResponse<>(message)
+        );
+    }
 }

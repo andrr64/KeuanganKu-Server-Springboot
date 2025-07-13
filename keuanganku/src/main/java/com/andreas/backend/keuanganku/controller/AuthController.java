@@ -13,12 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.dto.request.LoginRequest;
 import com.andreas.backend.keuanganku.dto.request.RegisterRequest;
+import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.service.AuthService;
 import com.andreas.backend.keuanganku.service.JwtService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -26,21 +29,12 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
 
-    public AuthController(AuthService authService, JwtService jwtService) {
-        this.authService = authService;
-        this.jwtService = jwtService;
-    }
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        Pengguna pengguna = authService.register(req.getNama(), req.getEmail(), req.getPassword());
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Registrasi berhasil!",
-                "id", pengguna.getId(),
-                "email", pengguna.getEmail(),
-                "nama", pengguna.getNama()
-        ));
+        authService.register(req.getNama(), req.getEmail(), req.getPassword());
+        return ResponseEntity.ok(
+                new GeneralResponse<>("Registrasi berhasil")
+        );
     }
 
     @PostMapping("/login")
@@ -53,12 +47,12 @@ public class AuthController {
                 .secure(true) // pastikan HTTPS di production
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(Duration.ofHours(1))
+                .maxAge(Duration.ofDays(3))
                 .build();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("message", "Login berhasil!"));
+                .body(new GeneralResponse<>("Login berhasil")); // <- ini body() letakkan di sini
     }
 
     @PostMapping("/logout")
@@ -71,6 +65,6 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
-                .body(Map.of("message", "Logout berhasil!"));
+                .body(new GeneralResponse<>("Logout berhasil"));
     }
 }

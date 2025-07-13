@@ -1,9 +1,15 @@
 package com.andreas.backend.keuanganku.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Akun {
@@ -52,5 +58,11 @@ public class Akun {
         this.dibuatPada = dibuatPada;
     }
 
-    // Getter dan Setter
+    public void setPengguna(Pengguna pengguna) {
+        this.pengguna = pengguna;
+    }
+
+    public Pengguna getPengguna() {
+        return pengguna;
+    }
 }

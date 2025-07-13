@@ -41,5 +41,13 @@ public class Kategori {
         this.jenis = jenis;
     }
 
+    public Pengguna getPengguna() {
+        return pengguna;
+    }
+
+    public void setPengguna(Pengguna pengguna) {
+        this.pengguna = pengguna;
+    }
+
     // Getter dan Setter
 }

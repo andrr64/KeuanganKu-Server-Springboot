@@ -1,86 +1,76 @@
 package com.andreas.backend.keuanganku.controller;
 
-import com.andreas.backend.keuanganku.dto.LoginRequest;
-import com.andreas.backend.keuanganku.dto.RegisterPenggunaRequest;
-import com.andreas.backend.keuanganku.model.Pengguna;
-import com.andreas.backend.keuanganku.service.PenggunaService;
-import com.andreas.backend.keuanganku.util.JWTUtil;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Duration;
+import java.util.Map;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import com.andreas.backend.keuanganku.dto.request.LoginRequest;
+import com.andreas.backend.keuanganku.dto.request.RegisterRequest;
+import com.andreas.backend.keuanganku.model.Pengguna;
+import com.andreas.backend.keuanganku.service.AuthService;
+import com.andreas.backend.keuanganku.service.JwtService;
 
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    @Autowired
-    private PenggunaService penggunaService;
 
-    @Autowired
-    private JWTUtil jwtUtil;
+    private final AuthService authService;
+    private final JwtService jwtService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterPenggunaRequest pengguna) {
-        if (penggunaService.isEmailDipakai(pengguna.getEmail())) {
-            return ResponseEntity.badRequest().body("Email sudah digunakan");
-        }
-        String passwordHashed = penggunaService.hashPassword(pengguna.getPassword());
-        Pengguna penggunaBaru = new Pengguna();
-        penggunaBaru.setSandiHash(passwordHashed);
-        penggunaBaru.setEmail(pengguna.getEmail());
-        penggunaBaru.setNama(pengguna.getNama());
-        penggunaBaru.setDibuatPada(LocalDateTime.now());
-        return ResponseEntity.ok(penggunaService.simpan(penggunaBaru));
+    public AuthController(AuthService authService, JwtService jwtService) {
+        this.authService = authService;
+        this.jwtService = jwtService;
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        // Buat cookie baru dengan nama sama (token), kosong, dan expired
-        Cookie cookie = new Cookie("token", null);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/"); // pastikan path sama dengan saat login
-        cookie.setMaxAge(0); // langsung kadaluarsa (hapus)
-        response.addCookie(cookie);
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+        Pengguna pengguna = authService.register(req.getNama(), req.getEmail(), req.getPassword());
 
-        return ResponseEntity.ok("Logout berhasil");
+        return ResponseEntity.ok(Map.of(
+                "message", "Registrasi berhasil!",
+                "id", pengguna.getId(),
+                "email", pengguna.getEmail(),
+                "nama", pengguna.getNama()
+        ));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
-        if (request.getEmail() == null || request.getPassword() == null) {
-            return ResponseEntity.badRequest().body("Email dan password wajib diisi");
-        }
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
+        Pengguna pengguna = authService.login(req.getEmail(), req.getPassword());
+        String accessToken = jwtService.generateToken(pengguna.getId());
 
-        Optional<Pengguna> penggunaOpt = penggunaService.temukanByEmail(request.getEmail());
+        ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
+                .httpOnly(true)
+                .secure(true) // pastikan HTTPS di production
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ofHours(1))
+                .build();
 
-        if (penggunaOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email tidak ditemukan");
-        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(Map.of("message", "Login berhasil!"));
+    }
 
-        Pengguna pengguna = penggunaOpt.get();
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        ResponseCookie expiredCookie = ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .build();
 
-        if (!penggunaService.passwordCocok(request.getPassword(), pengguna.getSandiHash())) {
-            return ResponseEntity.badRequest().body("Password salah");
-        }
-
-        // Buat token JWT
-        String token = jwtUtil.generateToken(pengguna.getId(), pengguna.getEmail());
-
-        // Simpan token di cookie HTTP-only
-        Cookie cookie = new Cookie("token", token);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(24 * 60 * 60); // 1 hari
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok("Login berhasil");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
+                .body(Map.of("message", "Logout berhasil!"));
     }
 }

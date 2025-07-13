@@ -2,26 +2,15 @@ package com.andreas.backend.keuanganku.dto.response;
 
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+
+@Data
+@AllArgsConstructor
 public class PenggunaResponse {
     private final UUID id;
     private final String nama;
     private final String email;
 
-    public PenggunaResponse(UUID id, String nama, String email) {
-        this.id = id;
-        this.nama = nama;
-        this.email = email;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getNama() {
-        return nama;
-    }
-
-    public String getEmail() {
-        return email;
-    }
 }

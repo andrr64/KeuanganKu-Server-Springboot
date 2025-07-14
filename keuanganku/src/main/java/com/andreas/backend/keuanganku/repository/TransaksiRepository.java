@@ -16,6 +16,7 @@ public interface TransaksiRepository extends JpaRepository<Transaksi, UUID> {
 
     List<Transaksi> findByAkun_Id(UUID idAkun);
 
+    @Deprecated
     List<Transaksi> findByKategori_Id(UUID idKategori);
 
     @Query("SELECT t FROM Transaksi t WHERE t.kategori.pengguna.id = :idPengguna")
@@ -28,5 +29,7 @@ public interface TransaksiRepository extends JpaRepository<Transaksi, UUID> {
     @Query("SELECT t FROM Transaksi t WHERE t.kategori.pengguna.id = :idPengguna AND t.akun.id = :idAkun")
     List<Transaksi> findByPenggunaAndAkun(@Param("idPengguna") UUID idPengguna,
             @Param("idAkun") UUID idAkun);
+
+    List<Transaksi> findAllByKategoriId(UUID idKategori);
 
 }

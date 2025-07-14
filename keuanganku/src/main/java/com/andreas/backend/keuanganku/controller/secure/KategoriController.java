@@ -48,4 +48,26 @@ public class KategoriController {
 
         return ResponseEntity.ok(new GeneralResponse<>("Ok", response));
     }
+
+    @PutMapping("/{id_kategori}")
+    public ResponseEntity<?> updateKategori(
+            @CurrentUserId UUID idPengguna,
+            @PathVariable("id_kategori") UUID idKategori,
+            @Valid @RequestBody KategoriRequest request
+    ) {
+        kategoriService.updateKategori(idPengguna, idKategori, request.getNama());
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil diperbarui"));
+    }
+
+    @DeleteMapping("/{id_kategori}")
+    public ResponseEntity<?> hapusKategori(
+            @CurrentUserId UUID idPengguna,
+            @PathVariable("id_kategori") UUID idKategori,
+            @RequestParam("ubahTransaksiKategori") boolean ubahTransaksiKategori,
+            @RequestParam(value = "targetKategori", required = false) UUID targetKategori
+    ) {
+        kategoriService.hapusKategori(idPengguna, idKategori, ubahTransaksiKategori, targetKategori);
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus"));
+    }
+
 }

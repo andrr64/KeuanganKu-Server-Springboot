@@ -72,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token == null || token.isBlank()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"message\": \"Token tidak ditemukan\"}");
+            response.getWriter().write("{\"message\": \"Unauthorized\"}");
             return; // hentikan proses filter
         }
 

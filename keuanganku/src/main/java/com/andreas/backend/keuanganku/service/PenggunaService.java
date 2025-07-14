@@ -1,19 +1,22 @@
 package com.andreas.backend.keuanganku.service;
 
+import com.andreas.backend.keuanganku.dto.request.UbahPasswordRequest;
+import com.andreas.backend.keuanganku.dto.request.UpdatePenggunaRequest;
 import com.andreas.backend.keuanganku.model.Pengguna;
-import com.andreas.backend.keuanganku.repository.PenggunaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
-@Service
-public class PenggunaService {
-    @Autowired
-    private PenggunaRepository penggunaRepo;
+public interface PenggunaService {
 
-    public Optional<Pengguna> getById(UUID idPengguna){
-        return penggunaRepo.findById(idPengguna);
-    }
+    Pengguna getById(UUID idPengguna);
+
+    void updateNamaAtauEmail(UUID id, UpdatePenggunaRequest request);
+
+    void ubahPassword(UUID id, UbahPasswordRequest request);
+
+    Pengguna login(String email, String rawPassword);
+
+    Pengguna register(String nama, String email, String rawPassword);
+
+    boolean isPasswordLengthOk(String password);
 }

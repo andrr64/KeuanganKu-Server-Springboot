@@ -14,8 +14,8 @@ import com.andreas.backend.keuanganku.dto.request.LoginRequest;
 import com.andreas.backend.keuanganku.dto.request.RegisterRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.model.Pengguna;
-import com.andreas.backend.keuanganku.service.AuthService;
 import com.andreas.backend.keuanganku.service.JwtService;
+import com.andreas.backend.keuanganku.service.PenggunaService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +25,12 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthService authService;
+    private final PenggunaService penggunaService;
     private final JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        authService.register(req.getNama(), req.getEmail(), req.getPassword());
+        penggunaService.register(req.getNama(), req.getEmail(), req.getPassword());
         return ResponseEntity.ok(
                 new GeneralResponse<>("Registrasi berhasil")
         );
@@ -38,7 +38,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
-        Pengguna pengguna = authService.login(req.getEmail(), req.getPassword());
+        Pengguna pengguna = penggunaService.login(req.getEmail(), req.getPassword());
         String accessToken = jwtService.generateToken(pengguna.getId());
 
         ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)

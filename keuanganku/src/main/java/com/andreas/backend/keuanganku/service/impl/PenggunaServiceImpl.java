@@ -74,10 +74,10 @@ public class PenggunaServiceImpl implements PenggunaService {
     @Override
     public Pengguna login(String email, String rawPassword) {
         Pengguna pengguna = penggunaRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Email tidak ditemukan"));
+                .orElseThrow(() -> new IllegalArgumentException("Email atau password salah"));
 
         if (!passwordEncoder.matches(rawPassword, pengguna.getPassword())) {
-            throw new IllegalArgumentException("Password salah");
+            throw new IllegalArgumentException("Email atau password salah");
         }
 
         return pengguna;

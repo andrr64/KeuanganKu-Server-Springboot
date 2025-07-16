@@ -102,6 +102,7 @@ public class TransaksiServiceImpl implements TransaksiService {
                 t.getAkun().getId(),
                 t.getKategori().getNama(),
                 t.getAkun().getNama(),
+                t.getKategori().getJenis(), 
                 t.getJumlah(),
                 t.getCatatan(),
                 t.getTanggal()

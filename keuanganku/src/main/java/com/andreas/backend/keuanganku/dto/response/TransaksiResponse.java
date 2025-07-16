@@ -18,3 +18,4 @@ public class TransaksiResponse {
     private String catatan;
     private LocalDateTime tanggal;
 }
+    

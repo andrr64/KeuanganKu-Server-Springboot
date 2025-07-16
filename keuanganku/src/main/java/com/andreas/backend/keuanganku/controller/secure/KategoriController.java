@@ -31,7 +31,7 @@ public class KategoriController {
             @Valid @RequestBody KategoriRequest req
     ) {
         kategoriService.tambahKategori(idPengguna, jenis, req.getNama());
-        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil ditambahkan"));
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil ditambahkan", null, true));
     }
 
     // GET /kategori/{jenis}
@@ -46,7 +46,7 @@ public class KategoriController {
                 .map(k -> new KategoriResponse(k.getId(), k.getNama(), k.getJenis()))
                 .toList();
 
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", response));
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
     }
 
     @PutMapping("/{id_kategori}")
@@ -56,7 +56,7 @@ public class KategoriController {
             @Valid @RequestBody KategoriRequest request
     ) {
         kategoriService.updateKategori(idPengguna, idKategori, request.getNama());
-        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil diperbarui"));
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil diperbarui", null, true));
     }
 
     @DeleteMapping("/{id_kategori}")
@@ -67,7 +67,7 @@ public class KategoriController {
             @RequestParam(value = "targetKategori", required = false) UUID targetKategori
     ) {
         kategoriService.hapusKategori(idPengguna, idKategori, ubahTransaksiKategori, targetKategori);
-        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus"));
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus", null, true));
     }
 
 }

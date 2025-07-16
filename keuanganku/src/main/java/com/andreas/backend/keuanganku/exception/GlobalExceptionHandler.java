@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
         if (cause instanceof UnrecognizedPropertyException) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Field tidak dikenal dalam JSON request"));
+                    .body(new GeneralResponse<>("Field tidak dikenali", null, false));
         }
 
         return ResponseEntity.badRequest()

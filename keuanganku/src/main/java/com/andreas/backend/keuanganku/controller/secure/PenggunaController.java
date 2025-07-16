@@ -46,7 +46,7 @@ public class PenggunaController {
             @Valid @RequestBody UpdatePenggunaRequest request
     ) {
         penggunaService.updateNamaAtauEmail(idPengguna, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Berhasil update pengguna"));
+        return ResponseEntity.ok(new GeneralResponse<>("Berhasil update pengguna", null, true));
     }
 
     @PutMapping("/ubah-password")
@@ -55,6 +55,6 @@ public class PenggunaController {
             @Valid @RequestBody UbahPasswordRequest request
     ) {
         penggunaService.ubahPassword(idPengguna, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Password berhasil diubah"));
+        return ResponseEntity.ok(new GeneralResponse<>("Password berhasil diubah", null, true));
     }
 }

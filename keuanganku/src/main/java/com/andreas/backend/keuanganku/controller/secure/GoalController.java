@@ -27,7 +27,7 @@ public class GoalController {
     public ResponseEntity<GeneralResponse<GoalResponse>> tambahGoal(@CurrentUserId UUID userId,
                                                                      @RequestBody GoalRequest request) {
         GoalResponse response = goalService.tambahGoal(userId, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Berhasil menambahkan goal", response));
+        return ResponseEntity.ok(new GeneralResponse<>("Berhasil menambahkan goal", response, true));
     }
 
     @GetMapping
@@ -35,14 +35,14 @@ public class GoalController {
             @CurrentUserId UUID userId,
             @RequestParam(required = false) Boolean tercapai) {
         List<GoalResponse> data = goalService.getAllGoals(userId, tercapai);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", data));
+        return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<GeneralResponse<GoalResponse>> getDetail(@CurrentUserId UUID userId,
                                                                     @PathVariable UUID id) {
         GoalResponse response = goalService.getById(userId, id);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", response));
+        return ResponseEntity.ok(new GeneralResponse<>("OK", response, true));
     }
 
     @PutMapping("/{id}")
@@ -50,7 +50,7 @@ public class GoalController {
                                                               @PathVariable UUID id,
                                                               @RequestBody UpdateGoalRequest request) {
         goalService.updateGoal(userId, id, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Goal berhasil diupdate", null));
+        return ResponseEntity.ok(new GeneralResponse<>("Goal berhasil diupdate", null, true));
     }
 
     @PutMapping("/{id}/tambah")
@@ -58,20 +58,20 @@ public class GoalController {
                                                               @PathVariable UUID id,
                                                               @RequestBody TambahDanaGoalRequest request) {
         goalService.tambahDana(userId, id, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Dana berhasil ditambahkan", null));
+        return ResponseEntity.ok(new GeneralResponse<>("Dana berhasil ditambahkan", null, true));
     }
 
     @PutMapping("/{id}/tandai-tercapai")
     public ResponseEntity<GeneralResponse<Object>> tandaiTercapai(@CurrentUserId UUID userId,
                                                                   @PathVariable UUID id) {
         goalService.tandaiTercapai(userId, id);
-        return ResponseEntity.ok(new GeneralResponse<>("Goal ditandai tercapai", null));
+        return ResponseEntity.ok(new GeneralResponse<>("Goal ditandai tercapai", null, true));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<GeneralResponse<Object>> delete(@CurrentUserId UUID userId,
                                                           @PathVariable UUID id) {
         goalService.hapusGoal(userId, id);
-        return ResponseEntity.ok(new GeneralResponse<>("Goal berhasil dihapus", null));
+        return ResponseEntity.ok(new GeneralResponse<>("Goal berhasil dihapus", null, true));
     }
 }

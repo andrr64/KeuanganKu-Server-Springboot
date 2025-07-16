@@ -37,10 +37,10 @@ public class TransferController {
     public ResponseEntity<?> transferFunds(
             @CurrentUserId UUID idPengguna,
             @Valid @RequestBody TransferRequest request
-    ) {
+    ) { 
         TransferResponse response = transferService.lakukanTransfer(idPengguna, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new GeneralResponse<>("Transfer berhasil dilakukan", response));
+                .body(new GeneralResponse<>("Transfer berhasil dilakukan", response, true));
     }
 
     @GetMapping
@@ -53,7 +53,7 @@ public class TransferController {
     ) {
         List<TransferResponse> result = transferService.getAllTransfer(
                 idPengguna, idAkun, startDate, endDate, sort);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", result));
+        return ResponseEntity.ok(new GeneralResponse<>("OK", result, true));
     }
 
     @GetMapping("/{id}")
@@ -62,7 +62,7 @@ public class TransferController {
             @PathVariable UUID id
     ) {
         DetailTransferResponse result = transferService.getById(idPengguna, id);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", result));
+        return ResponseEntity.ok(new GeneralResponse<>("OK", result, true));
     }
 
     @DeleteMapping("/{idTransfer}")
@@ -71,7 +71,7 @@ public class TransferController {
             @PathVariable UUID idTransfer
     ) {
         transferService.deleteTransfer(idPengguna, idTransfer);
-        return ResponseEntity.ok(new GeneralResponse<>("OK"));
+        return ResponseEntity.ok(new GeneralResponse<>("OK", null, true));
     }
 
     @PutMapping("/{id}")
@@ -81,6 +81,6 @@ public class TransferController {
             @RequestBody UpdateTransferRequest request
     ) {
         TransferResponse updated = transferService.updateTransfer(idPengguna, id, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Transfer berhasil diperbarui", updated));
+        return ResponseEntity.ok(new GeneralResponse<>("Transfer berhasil diperbarui", updated, true));
     }
 }

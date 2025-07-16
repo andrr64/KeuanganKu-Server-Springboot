@@ -36,7 +36,7 @@ public class AkunController {
             @Valid @RequestBody AkunRequest akunRequest
     ) {
         akunService.tambahAkun(idPengguna, akunRequest);
-        return ResponseEntity.ok(new GeneralResponse<>("Akun berhasil ditambahkan"));
+        return ResponseEntity.ok(new GeneralResponse<>("Akun berhasil ditambahkan", null, true));
     }
 
     @PutMapping("/update-nama/{id_akun}")
@@ -46,7 +46,7 @@ public class AkunController {
             @Valid @RequestBody UpdateNamaAkunRequest req
     ) {
         akunService.updateNamaAkun(idPengguna, idAkun, req.getNama());
-        return ResponseEntity.ok(new GeneralResponse<>("Nama akun berhasil diperbarui"));
+        return ResponseEntity.ok(new GeneralResponse<>("Nama akun berhasil diperbarui", null, true));
     }
 
     @GetMapping
@@ -62,7 +62,7 @@ public class AkunController {
         ))
                 .toList();
 
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", responseList));
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", responseList, true));
     }
 
 }

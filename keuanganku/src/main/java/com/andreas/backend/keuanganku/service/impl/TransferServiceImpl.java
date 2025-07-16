@@ -1,5 +1,18 @@
 package com.andreas.backend.keuanganku.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.andreas.backend.keuanganku.dto.AkunTransfer;
 import com.andreas.backend.keuanganku.dto.request.TransferRequest;
 import com.andreas.backend.keuanganku.dto.request.UpdateTransferRequest;
 import com.andreas.backend.keuanganku.dto.response.DetailTransferResponse;
@@ -14,16 +27,6 @@ import com.andreas.backend.keuanganku.service.TransferService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.*;
-
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -37,7 +40,14 @@ public class TransferServiceImpl implements TransferService {
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private TransferResponse toResponse(Transfer t) {
-        return new TransferResponse(t.getId(), t.getDariAkun().getId(), t.getKeAkun().getId(), t.getJumlah(), t.getTanggal(), t.getCatatan());
+        return new TransferResponse(
+            t.getId(), 
+            new AkunTransfer(t.getDariAkun().getId(), t.getDariAkun().getNama()), 
+            new AkunTransfer(t.getKeAkun().getId(), t.getKeAkun().getNama()),  
+            t.getJumlah(), 
+            t.getTanggal(), 
+            t.getCatatan()
+        );
     }
 
     @Override

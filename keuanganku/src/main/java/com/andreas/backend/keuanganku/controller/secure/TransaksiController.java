@@ -30,7 +30,7 @@ public class TransaksiController {
             @Valid @RequestBody TransaksiRequest request
     ) {
         transaksiService.tambahTransaksi(idPengguna, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil ditambahkan"));
+        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil ditambahkan", null, true));
     }
 
     @GetMapping
@@ -40,7 +40,7 @@ public class TransaksiController {
             @RequestParam(name = "idAkun", required = false) UUID idAkun
     ) {
         List<TransaksiResponse> daftar = transaksiService.getFilteredTransaksi(idPengguna, jenis, idAkun);
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", daftar));
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", daftar, true));
     }
 
     @PutMapping("/{id_transaksi}")
@@ -50,7 +50,7 @@ public class TransaksiController {
             @Valid @RequestBody TransaksiRequest request
     ) {
         transaksiService.updateTransaksi(idPengguna, idTransaksi, request);
-        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil diperbarui"));
+        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil diperbarui", null, true));
     }
 
     @DeleteMapping("/{id_transaksi}")
@@ -59,7 +59,7 @@ public class TransaksiController {
             @PathVariable("id_transaksi") UUID idTransaksi
     ) {
         transaksiService.hapusTransaksi(idPengguna, idTransaksi);
-        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil dihapus"));
+        return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil dihapus", null, true));
     }
 
 }

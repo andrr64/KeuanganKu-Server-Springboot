@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class GeneralResponse<T> {
     private String message;
     private T data;
+    private boolean success;
 
     // Constructor tanpa data
     public GeneralResponse(String message) {

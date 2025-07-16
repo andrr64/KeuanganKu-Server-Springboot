@@ -17,4 +17,5 @@ public interface AkunRepository extends JpaRepository<Akun, UUID> {
     boolean existsByNamaIgnoreCaseAndPenggunaId(String nama, UUID penggunaId);
     boolean existsByNamaAndPenggunaId(String nama, UUID penggunaId);
     Optional<Akun> findByIdAndPengguna_Id(UUID idAkun, UUID idPengguna);
+    List<Akun> findByPenggunaIdAndAktifTrue(UUID idPengguna);
 }

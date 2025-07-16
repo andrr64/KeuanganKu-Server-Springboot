@@ -17,10 +17,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Akun {
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+    private boolean aktif;
 
     private String nama;
     private BigDecimal saldo;

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,6 +64,11 @@ public class AkunController {
                 .toList();
 
         return ResponseEntity.ok(new GeneralResponse<>("Ok", responseList, true));
+    }
+
+    @DeleteMapping("/{id_akun}")
+    public ResponseEntity<?> hapusSemuaAkun(@CurrentUserId UUID idPengguna, @PathVariable("id_akun") UUID idAkun) {
+        return ResponseEntity.ok(new GeneralResponse<>("Semua akun berhasil dihapus", null, true));
     }
 
 }

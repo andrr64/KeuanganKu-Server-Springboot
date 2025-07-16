@@ -13,4 +13,6 @@ public interface AkunService {
     void updateNamaAkun(UUID idPengguna, UUID idAkun, String namaBaru);
 
     List<Akun> getSemuaAkun(UUID idPengguna);
+
+    void hapusSemuaAkun(UUID idPengguna, UUID idAkun);
 }

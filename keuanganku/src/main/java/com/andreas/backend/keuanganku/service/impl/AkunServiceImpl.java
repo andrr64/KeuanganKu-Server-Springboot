@@ -35,6 +35,7 @@ public class AkunServiceImpl implements AkunService {
         Akun akun = new Akun();
         akun.setNama(request.getNamaAkun());
         akun.setSaldo(request.getSaldoAwal());
+        akun.setAktif(true);
         akun.setPengguna(pengguna);
         akun.setDibuatPada(LocalDateTime.now());
 
@@ -56,7 +57,12 @@ public class AkunServiceImpl implements AkunService {
 
     @Override
     public List<Akun> getSemuaAkun(UUID idPengguna) {
-        return akunRepository.findByPenggunaId(idPengguna);
+        return akunRepository.findByPenggunaIdAndAktifTrue(idPengguna);
+    }
+
+    @Override
+    public void hapusSemuaAkun(UUID idPengguna, UUID idAkun){
+
     }
 
 }

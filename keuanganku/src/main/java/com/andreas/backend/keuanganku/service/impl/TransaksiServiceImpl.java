@@ -1,5 +1,6 @@
 package com.andreas.backend.keuanganku.service.impl;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -35,18 +36,29 @@ public class TransaksiServiceImpl implements TransaksiService {
 
     @Override
     public void tambahTransaksi(UUID idPengguna, TransaksiRequest request) {
-        // Ambil akun
+        // 🛡️ Validasi awal request
+        if (request == null) {
+            throw new IllegalArgumentException("Request tidak boleh null");
+        }
+
+        // 🧮 Validasi jumlah
+        if (request.getJumlah() == null || request.getJumlah().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Jumlah harus lebih dari 0");
+        }
+
+        // 🏦 Validasi akun milik pengguna
         UUID idAkun = UUID.fromString(request.getIdAkun());
         Akun akun = akunRepo.findById(idAkun)
                 .filter(a -> a.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Akun tidak ditemukan atau bukan milik pengguna"));
 
-        // Ambil kategori
+        // 🗂️ Validasi kategori (kategori sistem atau milik pengguna)
         UUID idKategori = UUID.fromString(request.getIdKategori());
         Kategori kategori = kategoriRepo.findById(idKategori)
-                .filter(k -> k.getPengguna().getId().equals(idPengguna))
+                .filter(k -> k.getPengguna() == null || k.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Kategori tidak ditemukan atau bukan milik pengguna"));
-        // Parse tanggal
+
+        // 🕒 Parsing tanggal
         LocalDateTime tanggal;
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -54,23 +66,23 @@ public class TransaksiServiceImpl implements TransaksiService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Format tanggal tidak valid. Gunakan dd/MM/yyyy HH:mm");
         }
-        // Validasi saldo cukup jika pengeluaran
+
+        // 💰 Validasi dan update saldo akun
         if (SysVar.isPengeluaran(kategori.getJenis())) {
             if (akun.getSaldo().compareTo(request.getJumlah()) < 0) {
                 throw new IllegalArgumentException("Saldo tidak mencukupi untuk pengeluaran (" + akun.getSaldo() + ")");
             }
             akun.setSaldo(akun.getSaldo().subtract(request.getJumlah()));
-            // Tambahkan saldo jika pemasukan
         } else if (SysVar.isPemasukan(kategori.getJenis())) {
             akun.setSaldo(akun.getSaldo().add(request.getJumlah()));
         } else {
             throw new IllegalArgumentException("Jenis kategori tidak valid");
         }
 
-        // Simpan perubahan saldo akun
+        // 💾 Simpan saldo akun terbaru
         akunRepo.save(akun);
 
-        // Buat dan simpan transaksi
+        // 📝 Buat dan simpan transaksi
         Transaksi transaksi = new Transaksi();
         transaksi.setAkun(akun);
         transaksi.setKategori(kategori);
@@ -102,7 +114,7 @@ public class TransaksiServiceImpl implements TransaksiService {
                 t.getAkun().getId(),
                 t.getKategori().getNama(),
                 t.getAkun().getNama(),
-                t.getKategori().getJenis(), 
+                t.getKategori().getJenis(),
                 t.getJumlah(),
                 t.getCatatan(),
                 t.getTanggal()

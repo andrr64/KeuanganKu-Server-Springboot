@@ -4,7 +4,15 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.KategoriRequest;
@@ -34,7 +42,17 @@ public class KategoriController {
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil ditambahkan", null, true));
     }
 
-    // GET /kategori/{jenis}
+    @GetMapping()
+    public ResponseEntity<?> getKategori(
+            @CurrentUserId UUID idPengguna
+    ) {
+        List<Kategori> list = kategoriService.getAllKategori(idPengguna);
+        List<KategoriResponse> response = list.stream()
+                .map(k -> new KategoriResponse(k.getId(), k.getNama(), k.getJenis()))
+                .toList();
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
+    }
+
     @GetMapping("/{jenis}")
     public ResponseEntity<?> getKategoriByJenis(
             @CurrentUserId UUID idPengguna,

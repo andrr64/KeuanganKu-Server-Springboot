@@ -1,9 +1,13 @@
 package com.andreas.backend.keuanganku.model;
 
-import jakarta.persistence.*;
-
 import java.util.UUID;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,6 +24,6 @@ public class Kategori {
     private Integer jenis; // 1 = pemasukan, 2 = pengeluaran
 
     @ManyToOne
-    @JoinColumn(name = "id_pengguna")
+    @JoinColumn(name = "id_pengguna", nullable=true)
     private Pengguna pengguna;
 }

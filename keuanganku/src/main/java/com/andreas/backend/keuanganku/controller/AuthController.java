@@ -32,7 +32,7 @@ public class AuthController {
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         penggunaService.register(req.getNama(), req.getEmail(), req.getPassword());
         return ResponseEntity.ok(
-                new GeneralResponse<>("Registrasi berhasil")
+                new GeneralResponse<>("Registrasi berhasil", null, true)
         );
     }
 
@@ -51,7 +51,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new GeneralResponse<>("Login berhasil")); // <- ini body() letakkan di sini
+                .body(new GeneralResponse<>("Login berhasil", null, true)); // <- ini body() letakkan di sini
     }
 
     @PostMapping("/logout")
@@ -64,6 +64,6 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
-                .body(new GeneralResponse<>("Logout berhasil"));
+                .body(new GeneralResponse<>("Logout berhasil", null, true));
     }
 }

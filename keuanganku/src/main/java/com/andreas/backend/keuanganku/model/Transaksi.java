@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +24,7 @@ public class Transaksi {
     private UUID id;
 
     private BigDecimal jumlah;
+    @Column(name = "catatan", length = 255)
     private String catatan;
     private LocalDateTime tanggal;
     private LocalDateTime dibuatPada;

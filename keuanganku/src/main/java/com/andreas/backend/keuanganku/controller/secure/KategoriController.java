@@ -1,8 +1,11 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,6 +66,25 @@ public class KategoriController {
         List<KategoriResponse> response = list.stream()
                 .map(k -> new KategoriResponse(k.getId(), k.getNama(), k.getJenis()))
                 .toList();
+
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<?> getKategoriFiltered(
+            @CurrentUserId UUID idPengguna,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "jenis", defaultValue = "0") int jenis
+    ) {
+        Page<Kategori> result = kategoriService.getFilteredKategori(idPengguna, jenis, keyword, page, size);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", result.getContent());
+        response.put("currentPage", result.getNumber());
+        response.put("totalItems", result.getTotalElements());
+        response.put("totalPages", result.getTotalPages());
 
         return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
     }

@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.andreas.backend.keuanganku.SysVar;
@@ -71,6 +75,20 @@ public class KategoriServiceImpl implements KategoriService {
     }
 
     @Override
+    public Page<Kategori> getFilteredKategori(UUID idPengguna, int jenis, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(size, 1),
+                Sort.by("nama").ascending()
+        );
+
+        String keywordQuery = (keyword != null && !keyword.trim().isEmpty()) ? "%" + keyword.toLowerCase() + "%" : null;
+        Integer jenisQuery = (jenis == 0) ? null : jenis; // 0 = semua jenis
+
+        return kategoriRepo.findFilteredKategori(idPengguna, jenisQuery, keywordQuery, pageable);
+    }
+
+    @Override
     public void updateKategori(UUID idPengguna, UUID idKategori, String namaBaru) {
         Kategori kategori = kategoriRepo.findById(idKategori)
                 .filter(k -> k.getPengguna() != null && k.getPengguna().getId().equals(idPengguna))
@@ -84,7 +102,7 @@ public class KategoriServiceImpl implements KategoriService {
 
         boolean namaSudahDigunakanOlehLain = kategoriRepo.findByPenggunaId(idPengguna).stream()
                 .anyMatch(k -> !k.getId().equals(idKategori)
-                        && k.getNama().equalsIgnoreCase(trimmedNamaBaru));
+                && k.getNama().equalsIgnoreCase(trimmedNamaBaru));
 
         if (namaSudahDigunakanOlehLain) {
             throw new IllegalArgumentException("Nama kategori '" + trimmedNamaBaru + "' sudah digunakan.");
@@ -136,4 +154,5 @@ public class KategoriServiceImpl implements KategoriService {
 
         kategoriRepo.delete(kategoriToDelete);
     }
+
 }

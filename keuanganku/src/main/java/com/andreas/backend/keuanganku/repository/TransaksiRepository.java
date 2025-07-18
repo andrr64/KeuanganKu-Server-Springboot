@@ -35,18 +35,17 @@ public interface TransaksiRepository extends JpaRepository<Transaksi, UUID> {
     List<Transaksi> findAllByKategoriId(UUID idKategori);
 
     @Query("""
-    SELECT t FROM Transaksi t
-    WHERE t.pengguna.id = :idPengguna
-    AND t.tanggal >= :startDate AND t.tanggal <= :endDate
-    AND (:jenis IS NULL OR t.kategori.jenis = :jenis)
-    AND (:idAkun IS NULL OR t.akun.id = :idAkun)
-    AND (
-        :keyword IS NULL OR
-        LOWER(t.catatan) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-        LOWER(t.kategori.nama) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    )
-    """)
-
+        SELECT t FROM Transaksi t
+        WHERE t.pengguna.id = :idPengguna
+        AND t.tanggal >= :startDate AND t.tanggal <= :endDate
+        AND (:jenis IS NULL OR t.kategori.jenis = :jenis)
+        AND (:idAkun IS NULL OR t.akun.id = :idAkun)
+        AND (
+            :keyword IS NULL OR
+            LOWER(CAST(t.catatan AS text)) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')) OR
+            LOWER(CAST(t.kategori.nama AS text)) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
+        )
+        """)
     Page<Transaksi> findFilteredWithSearch(
             @Param("idPengguna") UUID idPengguna,
             @Param("startDate") LocalDateTime startDate,

@@ -244,8 +244,13 @@ public class TransaksiServiceImpl implements TransaksiService {
             int page,
             int size
     ) {
-        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDate.of(2000, 1, 1).atStartOfDay();
-        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDate.now().atTime(23, 59, 59);
+        LocalDateTime start = startDate != null
+                ? startDate.atStartOfDay()
+                : LocalDate.of(2000, 1, 1).atStartOfDay();
+
+        LocalDateTime end = endDate != null
+                ? endDate.atTime(23, 59, 59)
+                : LocalDate.now().atTime(23, 59, 59);
 
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
@@ -253,8 +258,16 @@ public class TransaksiServiceImpl implements TransaksiService {
                 Sort.by("tanggal").descending()
         );
 
+        String formattedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.toLowerCase() : null;
+
         Page<Transaksi> transaksiPage = transaksiRepo.findFilteredWithSearch(
-                idPengguna, start, end, jenis, idAkun, keyword != null ? "%" + keyword.toLowerCase() + "%" : null, pageable
+                idPengguna,
+                start,
+                end,
+                jenis,
+                idAkun,
+                formattedKeyword,
+                pageable
         );
 
         return transaksiPage.map(t -> new TransaksiResponse(

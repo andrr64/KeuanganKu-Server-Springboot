@@ -1,11 +1,16 @@
 package com.andreas.backend.keuanganku.service.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,7 +95,7 @@ public class TransaksiServiceImpl implements TransaksiService {
         transaksi.setTanggal(tanggal);
         transaksi.setCatatan(request.getCatatan());
         transaksi.setDibuatPada(LocalDateTime.now());
-
+        transaksi.setPengguna(akun.getPengguna()); // atau bisa juga ambil dari penggunaRepo.findById(idPengguna)
         transaksiRepo.save(transaksi);
     }
 
@@ -227,4 +232,41 @@ public class TransaksiServiceImpl implements TransaksiService {
         akunRepo.save(akun);             // Simpan update saldo
         transaksiRepo.delete(transaksi); // Hapus transaksi
     }
+
+    @Override
+    public Page<TransaksiResponse> getFilteredTransaksi(
+            UUID idPengguna,
+            String keyword,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer jenis,
+            UUID idAkun,
+            int page,
+            int size
+    ) {
+        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDate.of(2000, 1, 1).atStartOfDay();
+        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDate.now().atTime(23, 59, 59);
+
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(size, 1),
+                Sort.by("tanggal").descending()
+        );
+
+        Page<Transaksi> transaksiPage = transaksiRepo.findFilteredWithSearch(
+                idPengguna, start, end, jenis, idAkun, keyword != null ? "%" + keyword.toLowerCase() + "%" : null, pageable
+        );
+
+        return transaksiPage.map(t -> new TransaksiResponse(
+                t.getId(),
+                t.getAkun().getId(),
+                t.getKategori() != null ? t.getKategori().getNama() : "Tanpa Kategori",
+                t.getAkun().getNama(),
+                t.getKategori() != null ? t.getKategori().getJenis() : 0,
+                t.getJumlah(),
+                t.getCatatan(),
+                t.getTanggal()
+        ));
+    }
+
 }

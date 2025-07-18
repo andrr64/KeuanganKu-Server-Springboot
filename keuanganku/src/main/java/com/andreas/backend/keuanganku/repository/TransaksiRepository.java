@@ -35,25 +35,26 @@ public interface TransaksiRepository extends JpaRepository<Transaksi, UUID> {
     List<Transaksi> findAllByKategoriId(UUID idKategori);
 
     @Query("""
-        SELECT t FROM Transaksi t
-        WHERE t.pengguna.id = :idPengguna
-        AND t.tanggal >= :startDate AND t.tanggal <= :endDate
-        AND (:jenis IS NULL OR t.kategori.jenis = :jenis)
-        AND (:idAkun IS NULL OR t.akun.id = :idAkun)
-        AND (
+    SELECT t FROM Transaksi t
+    WHERE t.pengguna.id = :idPengguna
+    AND t.tanggal >= :startDate AND t.tanggal <= :endDate
+    AND (:jenis IS NULL OR t.kategori.jenis = :jenis)
+    AND (:idAkun IS NULL OR t.akun.id = :idAkun)
+    AND (
         :keyword IS NULL OR
-        LOWER(CAST(t.catatan AS text)) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-        LOWER(CAST(t.kategori.nama AS text)) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
-        """)
-            Page<Transaksi> findFilteredWithSearch(
-                    @Param("idPengguna") UUID idPengguna,
-                    @Param("startDate") LocalDateTime startDate,
-                    @Param("endDate") LocalDateTime endDate,
-                    @Param("jenis") Integer jenis,
-                    @Param("idAkun") UUID idAkun,
-                    @Param("keyword") String keyword,
-                    Pageable pageable
-            );
+        LOWER(t.catatan) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+        LOWER(t.kategori.nama) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    )
+    """)
+
+    Page<Transaksi> findFilteredWithSearch(
+            @Param("idPengguna") UUID idPengguna,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("jenis") Integer jenis,
+            @Param("idAkun") UUID idAkun,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 
 }

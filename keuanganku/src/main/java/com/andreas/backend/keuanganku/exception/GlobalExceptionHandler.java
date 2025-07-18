@@ -1,7 +1,5 @@
 package com.andreas.backend.keuanganku.exception;
 
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,7 +17,7 @@ import io.jsonwebtoken.JwtException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+    public ResponseEntity<GeneralResponse<?>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
 
         if (cause instanceof UnrecognizedPropertyException) {
@@ -28,50 +26,50 @@ public class GlobalExceptionHandler {
         }
 
         return ResponseEntity.badRequest()
-                .body(Map.of("message", "Format JSON tidak valid"));
+                .body(new GeneralResponse<>("Format JSON tidak valid", null, false));
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntime(RuntimeException ex) {
-        System.out.println("Runtime exception occurred: {}" + ex.getMessage() + ex);
+    public ResponseEntity<GeneralResponse<?>> handleRuntime(RuntimeException ex) {
+        System.out.println("Runtime exception occurred: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new GeneralResponse<>(ex.getMessage(), null, false));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
-        System.out.println("Runtime exception occurred: {}" + ex.getMessage() + ex);
+    public ResponseEntity<GeneralResponse<?>> handleValidation(MethodArgumentNotValidException ex) {
+        System.out.println("Validation exception occurred: " + ex.getMessage());
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getDefaultMessage())
                 .findFirst()
                 .orElse("Validasi gagal");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", message));
+                .body(new GeneralResponse<>(message, null, false));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleOther(Exception ex) {
-        System.out.println("Runtime exception occurred: {}" + ex.getMessage() + ex);
+    public ResponseEntity<GeneralResponse<?>> handleOther(Exception ex) {
+        System.out.println("Unhandled exception occurred: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Terjadi kesalahan internal"));
+                .body(new GeneralResponse<>("Terjadi kesalahan internal", null, false));
     }
 
     @ExceptionHandler(JwtException.class)
-    public ResponseEntity<?> handleJwtException(JwtException ex) {
-        System.out.println("Runtime exception occurred: {}" + ex.getMessage() + ex);
-        return ResponseEntity.status(401).body(Map.of("message", "Token tidak valid"));
+    public ResponseEntity<GeneralResponse<?>> handleJwtException(JwtException ex) {
+        System.out.println("JWT exception occurred: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new GeneralResponse<>("Token tidak valid", null, false));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<GeneralResponse<?>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String paramName = ex.getName();
         String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
 
         String message = String.format("Parameter '%s' harus bertipe %s yang valid", paramName, expectedType);
 
-        return ResponseEntity.badRequest().body(
-                new GeneralResponse<>(message)
-        );
+        return ResponseEntity.badRequest()
+                .body(new GeneralResponse<>(message, null, false));
     }
 }

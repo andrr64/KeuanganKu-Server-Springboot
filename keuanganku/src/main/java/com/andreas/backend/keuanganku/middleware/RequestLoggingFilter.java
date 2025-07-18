@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
+    public static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
     @Override
     protected void doFilterInternal(

@@ -18,17 +18,21 @@ import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.service.PenggunaService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/secure/pengguna")
+@RequiredArgsConstructor
 public class PenggunaController {
 
     private final PenggunaService penggunaService;
 
-    public PenggunaController(PenggunaService penggunaService) {
-        this.penggunaService = penggunaService;
-    }
-
+    /**
+     * Mengambil detail pengguna yang sedang login.
+     *
+     * @param userId ID pengguna dari token (injected via @CurrentUserId)
+     * @return Detail pengguna berupa ID, nama, dan email
+     */
     @GetMapping("/detail-pengguna")
     public ResponseEntity<?> getDetailPengguna(@CurrentUserId UUID userId) {
         Pengguna pengguna = penggunaService.getById(userId);
@@ -40,6 +44,13 @@ public class PenggunaController {
         ));
     }
 
+    /**
+     * Memperbarui nama dan/atau email pengguna.
+     *
+     * @param idPengguna ID pengguna saat ini
+     * @param request Payload berisi nama atau email baru
+     * @return Respon sukses jika berhasil memperbarui
+     */
     @PutMapping("/update")
     public ResponseEntity<?> updateNamaEmail(
             @CurrentUserId UUID idPengguna,
@@ -49,6 +60,13 @@ public class PenggunaController {
         return ResponseEntity.ok(new GeneralResponse<>("Berhasil update pengguna", null, true));
     }
 
+    /**
+     * Mengubah password pengguna.
+     *
+     * @param idPengguna ID pengguna saat ini
+     * @param request Payload berisi password lama dan password baru
+     * @return Respon sukses jika password berhasil diubah
+     */
     @PutMapping("/ubah-password")
     public ResponseEntity<?> ubahPassword(
             @CurrentUserId UUID idPengguna,

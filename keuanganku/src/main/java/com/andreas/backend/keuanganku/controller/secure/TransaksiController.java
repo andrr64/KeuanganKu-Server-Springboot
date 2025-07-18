@@ -22,7 +22,6 @@ import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
-import com.andreas.backend.keuanganku.middleware.RequestLoggingFilter;
 import com.andreas.backend.keuanganku.service.TransaksiService;
 
 import jakarta.validation.Valid;
@@ -35,6 +34,13 @@ public class TransaksiController {
 
     private final TransaksiService transaksiService;
 
+    /**
+     * Menambahkan transaksi baru milik pengguna.
+     *
+     * @param idPengguna ID pengguna yang melakukan request
+     * @param request Data transaksi yang akan ditambahkan
+     * @return Response sukses jika berhasil menambahkan
+     */
     @PostMapping
     public ResponseEntity<?> tambahTransaksi(
             @CurrentUserId UUID idPengguna,
@@ -44,6 +50,21 @@ public class TransaksiController {
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil ditambahkan", null, true));
     }
 
+    /**
+     * Mengambil daftar transaksi berdasarkan filter.
+     *
+     * @param idPengguna ID pengguna yang meminta data
+     * @param startDate Tanggal mulai filter (opsional, format dd/MM/yyyy)
+     * @param endDate Tanggal akhir filter (opsional, format dd/MM/yyyy)
+     * @param jenis Jenis kategori (1 = pengeluaran, 2 = pemasukan, null =
+     * semua)
+     * @param idAkun ID akun tertentu untuk memfilter (opsional)
+     * @param page Nomor halaman (dimulai dari 0)
+     * @param keyword Kata kunci pencarian pada catatan atau nama kategori
+     * (opsional)
+     * @param size Jumlah data per halaman
+     * @return Data transaksi yang sudah difilter dalam bentuk paginasi
+     */
     @GetMapping()
     public ResponseEntity<?> getTransaksi(
             @CurrentUserId UUID idPengguna,
@@ -59,15 +80,6 @@ public class TransaksiController {
                 idPengguna, keyword, startDate, endDate, jenis, idAkun, page, size
         );
 
-        RequestLoggingFilter.log.info("=== REQUEST TRANSAKSI DENGAN PARAMETER ===");
-        RequestLoggingFilter.log.info("idPengguna : {}", idPengguna);
-        RequestLoggingFilter.log.info("startDate  : {}", startDate);
-        RequestLoggingFilter.log.info("endDate    : {}", endDate);
-        RequestLoggingFilter.log.info("jenis      : {}", jenis);
-        RequestLoggingFilter.log.info("idAkun     : {}", idAkun);
-        RequestLoggingFilter.log.info("page       : {}", page);
-        RequestLoggingFilter.log.info("size       : {}", size);
-
         Map<String, Object> response = new HashMap<>();
         response.put("content", daftar.getContent());
         response.put("currentPage", daftar.getNumber());
@@ -77,6 +89,14 @@ public class TransaksiController {
         return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
     }
 
+    /**
+     * Memperbarui transaksi berdasarkan ID transaksi.
+     *
+     * @param idPengguna ID pengguna saat ini
+     * @param idTransaksi ID transaksi yang akan diperbarui
+     * @param request Data transaksi yang baru
+     * @return Respon sukses jika berhasil diperbarui
+     */
     @PutMapping("/{id_transaksi}")
     public ResponseEntity<?> updateTransaksi(
             @CurrentUserId UUID idPengguna,
@@ -87,6 +107,13 @@ public class TransaksiController {
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil diperbarui", null, true));
     }
 
+    /**
+     * Menghapus transaksi berdasarkan ID.
+     *
+     * @param idPengguna ID pengguna saat ini
+     * @param idTransaksi ID transaksi yang akan dihapus
+     * @return Respon sukses jika berhasil dihapus
+     */
     @DeleteMapping("/{id_transaksi}")
     public ResponseEntity<?> hapusTransaksi(
             @CurrentUserId UUID idPengguna,
@@ -95,5 +122,4 @@ public class TransaksiController {
         transaksiService.hapusTransaksi(idPengguna, idTransaksi);
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil dihapus", null, true));
     }
-
 }

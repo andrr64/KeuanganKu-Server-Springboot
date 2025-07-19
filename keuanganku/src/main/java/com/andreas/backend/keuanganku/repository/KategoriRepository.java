@@ -29,6 +29,8 @@ public interface KategoriRepository extends JpaRepository<Kategori, UUID> {
 
     boolean existsByNama(String nama);
 
+    boolean existsByIdAndPenggunaIsNull(UUID id);
+
     @Query(value = """
     SELECT * FROM kategori
     WHERE (id_pengguna = :idPengguna OR id_pengguna IS NULL)

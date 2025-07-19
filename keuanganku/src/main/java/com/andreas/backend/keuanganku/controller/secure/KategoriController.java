@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.KategoriRequest;
+import com.andreas.backend.keuanganku.dto.request.TambahKategoriRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.dto.response.KategoriResponse;
 import com.andreas.backend.keuanganku.model.Kategori;
@@ -159,5 +160,14 @@ public class KategoriController {
     ) {
         kategoriService.hapusKategori(idPengguna, idKategori, ubahTransaksiKategori, targetKategori);
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus", null, true));
+    }
+
+    @PostMapping()
+    public ResponseEntity<?> tambahTransaksi(
+            @CurrentUserId UUID idPengguna,
+            @Valid @RequestBody TambahKategoriRequest request
+    ) {
+        kategoriService.tambahKategori(idPengguna, request.getJenis(), request.getNama());
+        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil disimpan", null, true));
     }
 }

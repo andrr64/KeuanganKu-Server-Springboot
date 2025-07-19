@@ -90,6 +90,10 @@ public class KategoriServiceImpl implements KategoriService {
 
     @Override
     public void updateKategori(UUID idPengguna, UUID idKategori, String namaBaru) {
+        boolean isSystemcategOry = kategoriRepo.existsByIdAndPenggunaIsNull(idKategori);
+        if (isSystemcategOry){
+            throw new IllegalArgumentException("Kategori sistem tidak dapat diperbarui. Harap pilih kategori lain.");
+        }
         Kategori kategori = kategoriRepo.findById(idKategori)
                 .filter(k -> k.getPengguna() != null && k.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Kategori tidak ditemukan atau bukan milik pengguna"));

@@ -7,6 +7,9 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.andreas.backend.keuanganku.dto.request.GoalRequest;
@@ -77,6 +80,22 @@ public class GoalServiceImpl implements GoalService {
             goals = goalRepo.findByPengguna_Id(userId);
         }
         return goals.stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    public void updateStatusTercapai(UUID userId, UUID id, boolean status) {
+        Goal goal = goalRepo.findByIdAndPengguna_Id(id, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
+
+        if (status) {
+            goal.setTercapai(true);
+            goal.setTerkumpul(goal.getTarget());
+        } else {
+            goal.setTercapai(false);
+            goal.setTerkumpul(BigDecimal.ZERO);
+        }
+
+        goalRepo.save(goal);
     }
 
     @Override
@@ -163,6 +182,57 @@ public class GoalServiceImpl implements GoalService {
         Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
         goalRepo.delete(goal);
+    }
+
+    @Override
+    public Page<GoalResponse> filterGoals(UUID userId, int page, int size, String keyword, Boolean tercapai) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Goal> result = goalRepo.findFilteredGoals(userId, tercapai, keyword, pageable);
+        return result.map(this::toResponse);
+    }
+
+    @Override
+    public void tambahUangKeGoal(UUID userId, UUID goalId, double jumlahUang) {
+        Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
+
+        if (goal.getTercapai() != null && goal.getTercapai()) {
+            throw new IllegalStateException("Goal sudah tercapai, tidak bisa menambah uang lagi.");
+        }
+
+        BigDecimal tambahan = BigDecimal.valueOf(jumlahUang);
+        BigDecimal totalBaru = goal.getTerkumpul().add(tambahan);
+
+        if (totalBaru.compareTo(goal.getTarget()) >= 0) {
+            goal.setTerkumpul(goal.getTarget());
+            goal.setTercapai(true);
+        } else {
+            goal.setTerkumpul(totalBaru);
+        }
+
+        goalRepo.save(goal);
+    }
+
+    @Override
+    public void kurangiUangDariGoal(UUID userId, UUID goalId, double jumlahUang) {
+        Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
+
+        BigDecimal jumlahKurang = BigDecimal.valueOf(jumlahUang);
+        BigDecimal totalBaru = goal.getTerkumpul().subtract(jumlahKurang);
+
+        if (totalBaru.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Jumlah yang dikurangi tidak boleh membuat total terkumpul menjadi negatif");
+        }
+
+        goal.setTerkumpul(totalBaru);
+
+        // Jika setelah dikurangi, uang tidak sama dengan target, maka goal tidak tercapai
+        if (totalBaru.compareTo(goal.getTarget()) != 0) {
+            goal.setTercapai(false);
+        }
+
+        goalRepo.save(goal);
     }
 
     private GoalResponse toResponse(Goal goal) {

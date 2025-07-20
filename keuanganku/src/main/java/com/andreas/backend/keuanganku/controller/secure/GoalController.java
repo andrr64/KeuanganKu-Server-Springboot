@@ -72,13 +72,6 @@ public class GoalController {
         return ResponseEntity.ok(new GeneralResponse<>("Dana berhasil ditambahkan", null, true));
     }
 
-    @PutMapping("/{id}/tandai-tercapai")
-    public ResponseEntity<GeneralResponse<Object>> tandaiTercapai(@CurrentUserId UUID userId,
-            @PathVariable UUID id) {
-        goalService.tandaiTercapai(userId, id);
-        return ResponseEntity.ok(new GeneralResponse<>("Goal ditandai tercapai", null, true));
-    }
-
     @PutMapping("/{id}/set-status")
     public ResponseEntity<GeneralResponse<Object>> updateStatusTercapai(
             @CurrentUserId UUID userId,

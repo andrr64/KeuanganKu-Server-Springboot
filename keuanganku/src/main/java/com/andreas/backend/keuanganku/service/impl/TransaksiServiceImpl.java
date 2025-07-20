@@ -122,41 +122,35 @@ public class TransaksiServiceImpl implements TransaksiService {
                 t.getKategori().getJenis(),
                 t.getJumlah(),
                 t.getCatatan(),
-                t.getTanggal()
+                t.getTanggal(),
+                t.getKategori()
         )).toList();
     }
 
     @Override
     public void updateTransaksi(UUID idPengguna, UUID idTransaksi, TransaksiRequest request) {
-        // Ambil transaksi lama
+        // 1. Validate and get existing transaction
         Transaksi transaksiLama = transaksiRepo.findById(idTransaksi)
                 .filter(t -> t.getAkun().getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Transaksi tidak ditemukan atau bukan milik pengguna"));
 
-        Akun akunLama = transaksiLama.getAkun();
-        Kategori kategoriLama = transaksiLama.getKategori();
-        boolean isPengeluaranLama = SysVar.isPengeluaran(kategoriLama.getJenis());
-
-        // Rollback saldo dari transaksi lama
-        if (isPengeluaranLama) {
-            akunLama.setSaldo(akunLama.getSaldo().add(transaksiLama.getJumlah()));
-        } else if (SysVar.isPemasukan(kategoriLama.getJenis())) {
-            akunLama.setSaldo(akunLama.getSaldo().subtract(transaksiLama.getJumlah()));
-        }
-
-        // Ambil kategori baru
+        // 2. Get new category and validate
         UUID idKategoriBaru = UUID.fromString(request.getIdKategori());
         Kategori kategoriBaru = kategoriRepo.findById(idKategoriBaru)
-                .filter(k -> k.getPengguna().getId().equals(idPengguna))
+                .filter(k -> k.getPengguna() == null || k.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Kategori tidak valid atau bukan milik pengguna"));
 
-        // Ambil akun baru
+        if (kategoriBaru.getJenis() != 1 && kategoriBaru.getJenis() != 2) {
+            throw new IllegalArgumentException("Jenis kategori tidak valid. Hanya boleh 1 (pengeluaran) atau 2 (pemasukan)");
+        }
+
+        // 3. Get new account and validate
         UUID idAkunBaru = UUID.fromString(request.getIdAkun());
         Akun akunBaru = akunRepo.findById(idAkunBaru)
                 .filter(a -> a.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Akun tidak valid atau bukan milik pengguna"));
 
-        // Parse tanggal
+        // 4. Parse date
         LocalDateTime tanggal;
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -165,34 +159,42 @@ public class TransaksiServiceImpl implements TransaksiService {
             throw new IllegalArgumentException("Format tanggal tidak valid. Gunakan dd/MM/yyyy HH:mm");
         }
 
-        boolean isPengeluaranBaru = SysVar.isPengeluaran(kategoriBaru.getJenis());
-        boolean isPemasukanBaru = SysVar.isPemasukan(kategoriBaru.getJenis());
+        // 5. Handle account balance changes
+        Akun akunLama = transaksiLama.getAkun();
+        BigDecimal jumlahLama = transaksiLama.getJumlah();
+        BigDecimal jumlahBaru = request.getJumlah();
 
-        if (!isPengeluaranBaru && !isPemasukanBaru) {
-            throw new IllegalArgumentException("Jenis kategori tidak valid");
+        // Rollback old transaction effect
+        if (transaksiLama.getKategori().getJenis() == 1) {
+            // Old transaction was expense - add back the amount
+            akunLama.setSaldo(akunLama.getSaldo().add(jumlahLama));
+        } else {
+            // Old transaction was income - subtract the amount
+            akunLama.setSaldo(akunLama.getSaldo().subtract(jumlahLama));
         }
 
-        // Penyesuaian saldo akun baru berdasarkan logika perubahan jumlah
-        if (isPengeluaranBaru) {
-            // Jika pengeluaran → pastikan saldo cukup
-            if (akunBaru.getSaldo().compareTo(request.getJumlah()) < 0) {
+        // Apply new transaction effect
+        if (kategoriBaru.getJenis() == 1) {
+            // New transaction is expense
+            if (akunBaru.getSaldo().compareTo(jumlahBaru) < 0) {
                 throw new IllegalArgumentException("Saldo tidak mencukupi untuk pengeluaran");
             }
-            akunBaru.setSaldo(akunBaru.getSaldo().subtract(request.getJumlah()));
-        } else if (isPemasukanBaru) {
-            akunBaru.setSaldo(akunBaru.getSaldo().add(request.getJumlah()));
+            akunBaru.setSaldo(akunBaru.getSaldo().subtract(jumlahBaru));
+        } else {
+            // New transaction is income
+            akunBaru.setSaldo(akunBaru.getSaldo().add(jumlahBaru));
         }
 
-        // Simpan perubahan saldo
+        // 6. Save account changes
         akunRepo.save(akunLama);
         if (!akunLama.getId().equals(akunBaru.getId())) {
             akunRepo.save(akunBaru);
         }
 
-        // Update isi transaksi
+        // 7. Update transaction
         transaksiLama.setAkun(akunBaru);
         transaksiLama.setKategori(kategoriBaru);
-        transaksiLama.setJumlah(request.getJumlah());
+        transaksiLama.setJumlah(jumlahBaru);
         transaksiLama.setTanggal(tanggal);
         transaksiLama.setCatatan(request.getCatatan());
 
@@ -216,17 +218,26 @@ public class TransaksiServiceImpl implements TransaksiService {
             throw new EntityNotFoundException("Kategori tidak ditemukan");
         }
 
-        // Kembalikan saldo berdasarkan jenis transaksi
-        if (SysVar.isPengeluaran(kategori.getJenis())) {
-            akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah()));
-        } else if (SysVar.isPemasukan(kategori.getJenis())) {
-            // 💥 Validasi: jika saldo sekarang < jumlah transaksi, maka error
+        Integer jenis = kategori.getJenis();
+        if (jenis == null) {
+            throw new IllegalArgumentException("Jenis kategori tidak boleh null");
+        }
+
+        // Validasi jumlah dan saldo
+        if (transaksi.getJumlah() == null || akun.getSaldo() == null) {
+            throw new IllegalStateException("Jumlah transaksi atau saldo akun tidak boleh null");
+        }
+
+        // Logika berdasarkan jenis kategori
+        if (jenis == 1) { // Pengeluaran
+            akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah())); // rollback saldo
+        } else if (jenis == 2) { // Pemasukan
             if (akun.getSaldo().compareTo(transaksi.getJumlah()) < 0) {
                 throw new IllegalArgumentException("Saldo tidak mencukupi untuk menghapus transaksi pemasukan ini");
             }
             akun.setSaldo(akun.getSaldo().subtract(transaksi.getJumlah()));
         } else {
-            throw new IllegalArgumentException("Jenis kategori tidak valid");
+            throw new IllegalArgumentException("Jenis kategori tidak valid (harus 1 atau 2)");
         }
 
         akunRepo.save(akun);             // Simpan update saldo
@@ -278,7 +289,8 @@ public class TransaksiServiceImpl implements TransaksiService {
                 t.getKategori() != null ? t.getKategori().getJenis() : 0,
                 t.getJumlah(),
                 t.getCatatan(),
-                t.getTanggal()
+                t.getTanggal(),
+                t.getKategori()
         ));
     }
 

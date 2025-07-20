@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.andreas.backend.keuanganku.model.Kategori;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -18,5 +20,6 @@ public class TransaksiResponse {
     private BigDecimal jumlah;
     private String catatan;
     private LocalDateTime tanggal;
+    private Kategori kategori;
 }
     

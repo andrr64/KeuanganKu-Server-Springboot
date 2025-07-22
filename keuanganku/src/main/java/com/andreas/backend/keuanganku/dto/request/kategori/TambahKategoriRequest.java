@@ -1,4 +1,4 @@
-package com.andreas.backend.keuanganku.dto.request;
+package com.andreas.backend.keuanganku.dto.request.kategori;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

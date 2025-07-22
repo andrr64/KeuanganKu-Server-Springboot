@@ -1,7 +1,6 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,16 +17,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
-import com.andreas.backend.keuanganku.dto.request.KategoriRequest;
-import com.andreas.backend.keuanganku.dto.request.TambahKategoriRequest;
+import com.andreas.backend.keuanganku.dto.request.kategori.TambahKategoriRequest;
+import com.andreas.backend.keuanganku.dto.request.kategori.UpdateKategoriRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
-import com.andreas.backend.keuanganku.dto.response.KategoriResponse;
 import com.andreas.backend.keuanganku.model.Kategori;
 import com.andreas.backend.keuanganku.service.KategoriService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Controller untuk menangani operasi terkait kategori keuangan (pemasukan/pengeluaran)
+ * yang aman (menggunakan otentikasi).
+ */
 @RestController
 @RequestMapping("/api/secure/kategori")
 @RequiredArgsConstructor
@@ -36,72 +38,14 @@ public class KategoriController {
     private final KategoriService kategoriService;
 
     /**
-     * Endpoint untuk menambahkan kategori berdasarkan jenis.
+     * Mengambil daftar kategori milik pengguna dengan filter, pencarian, dan pagination.
      *
-     * @param idPengguna ID pengguna saat ini (diambil dari token)
-     * @param jenis Jenis kategori (1 = Pengeluaran, 2 = Pemasukan)
-     * @param req Body permintaan berisi nama kategori
-     * @return Respon sukses jika berhasil ditambahkan
-     */
-    @PostMapping("/{jenis}")
-    public ResponseEntity<?> tambahKategori(
-            @CurrentUserId UUID idPengguna,
-            @PathVariable Integer jenis,
-            @Valid @RequestBody KategoriRequest req
-    ) {
-        kategoriService.tambahKategori(idPengguna, jenis, req.getNama());
-        return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil ditambahkan", null, true));
-    }
-
-    /**
-     * Endpoint lama (deprecated) untuk mengambil semua kategori milik pengguna
-     * dan sistem.
-     *
-     * @param idPengguna ID pengguna saat ini
-     * @return Daftar kategori
-     */
-    @Deprecated
-    @GetMapping()
-    public ResponseEntity<?> getKategori(
-            @CurrentUserId UUID idPengguna
-    ) {
-        List<Kategori> list = kategoriService.getAllKategori(idPengguna);
-        List<KategoriResponse> response = list.stream()
-                .map(k -> new KategoriResponse(k.getId(), k.getNama(), k.getJenis()))
-                .toList();
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
-    }
-
-    /**
-     * Endpoint lama (deprecated) untuk mengambil kategori berdasarkan jenis.
-     *
-     * @param idPengguna ID pengguna saat ini
-     * @param jenis Jenis kategori (1 = Pengeluaran, 2 = Pemasukan)
-     * @return Daftar kategori sesuai jenis
-     */
-    @Deprecated
-    @GetMapping("/{jenis}")
-    public ResponseEntity<?> getKategoriByJenis(
-            @CurrentUserId UUID idPengguna,
-            @PathVariable Integer jenis
-    ) {
-        List<Kategori> list = kategoriService.getKategoriByJenis(idPengguna, jenis);
-        List<KategoriResponse> response = list.stream()
-                .map(k -> new KategoriResponse(k.getId(), k.getNama(), k.getJenis()))
-                .toList();
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
-    }
-
-    /**
-     * Endpoint baru untuk mengambil kategori dengan filter pencarian, jenis,
-     * dan pagination.
-     *
-     * @param idPengguna ID pengguna saat ini
-     * @param page Nomor halaman (dimulai dari 0)
+     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
+     * @param page Halaman data yang diminta (dimulai dari 0)
      * @param size Jumlah data per halaman
-     * @param keyword Kata kunci pencarian berdasarkan nama kategori (opsional)
-     * @param jenis Jenis kategori (0 = semua, 1 = Pengeluaran, 2 = Pemasukan)
-     * @return Hasil pencarian kategori dalam bentuk paginasi
+     * @param keyword Kata kunci pencarian nama kategori (opsional)
+     * @param jenis Jenis kategori: 0 = semua, 1 = Pengeluaran, 2 = Pemasukan
+     * @return ResponseEntity berisi data kategori dalam format paginasi
      */
     @GetMapping("/filter")
     public ResponseEntity<?> getKategoriFiltered(
@@ -123,33 +67,31 @@ public class KategoriController {
     }
 
     /**
-     * Memperbarui nama kategori.
+     * Memperbarui nama kategori berdasarkan ID kategori.
      *
-     * @param idPengguna ID pengguna saat ini
+     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
      * @param idKategori ID kategori yang ingin diperbarui
-     * @param request Permintaan berisi nama baru kategori
-     * @return Respon sukses jika berhasil diperbarui
+     * @param request Payload berisi nama baru kategori
+     * @return ResponseEntity sukses jika pembaruan berhasil
      */
     @PutMapping("/{id_kategori}")
     public ResponseEntity<?> updateKategori(
             @CurrentUserId UUID idPengguna,
             @PathVariable("id_kategori") UUID idKategori,
-            @Valid @RequestBody KategoriRequest request
+            @Valid @RequestBody UpdateKategoriRequest request
     ) {
         kategoriService.updateKategori(idPengguna, idKategori, request.getNama());
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil diperbarui", null, true));
     }
 
     /**
-     * Menghapus kategori.
+     * Menghapus kategori berdasarkan ID kategori.
      *
-     * @param idPengguna ID pengguna saat ini
+     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
      * @param idKategori ID kategori yang akan dihapus
-     * @param ubahTransaksiKategori Jika true, pindahkan transaksi ke kategori
-     * lain
-     * @param targetKategori ID kategori tujuan jika transaksi ingin dipindahkan
-     * (opsional)
-     * @return Respon sukses jika berhasil dihapus
+     * @param ubahTransaksiKategori Jika true, pindahkan transaksi ke kategori lain
+     * @param targetKategori (Opsional) ID kategori tujuan jika transaksi ingin dipindahkan
+     * @return ResponseEntity sukses jika penghapusan berhasil
      */
     @DeleteMapping("/{id_kategori}")
     public ResponseEntity<?> hapusKategori(
@@ -162,8 +104,15 @@ public class KategoriController {
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus", null, true));
     }
 
+    /**
+     * Menambahkan kategori baru untuk pengguna.
+     *
+     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
+     * @param request Payload berisi nama dan jenis kategori
+     * @return ResponseEntity sukses jika penambahan berhasil
+     */
     @PostMapping()
-    public ResponseEntity<?> tambahTransaksi(
+    public ResponseEntity<?> tambahKategori(
             @CurrentUserId UUID idPengguna,
             @Valid @RequestBody TambahKategoriRequest request
     ) {

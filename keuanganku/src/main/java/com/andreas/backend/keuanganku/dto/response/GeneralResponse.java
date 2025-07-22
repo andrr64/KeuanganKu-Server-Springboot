@@ -33,4 +33,14 @@ public class GeneralResponse<T> {
 
         return new GeneralResponse<>(message, response, true);
     }
+
+    public static <T> GeneralResponse<Map<String, Object>> fromPage(Page<T> page) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", page.getContent());
+        response.put("currentPage", page.getNumber());
+        response.put("totalItems", page.getTotalElements());
+        response.put("totalPages", page.getTotalPages());
+
+        return new GeneralResponse<>("Ok", response, true);
+    }
 }

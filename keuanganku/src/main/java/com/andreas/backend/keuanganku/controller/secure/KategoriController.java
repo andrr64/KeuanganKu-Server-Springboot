@@ -1,7 +1,5 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -27,8 +25,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Controller untuk menangani operasi terkait kategori keuangan (pemasukan/pengeluaran)
- * yang aman (menggunakan otentikasi).
+ * Controller untuk menangani operasi terkait kategori keuangan
+ * (pemasukan/pengeluaran) yang aman (menggunakan otentikasi).
  */
 @RestController
 @RequestMapping("/api/secure/kategori")
@@ -38,7 +36,8 @@ public class KategoriController {
     private final KategoriService kategoriService;
 
     /**
-     * Mengambil daftar kategori milik pengguna dengan filter, pencarian, dan pagination.
+     * Mengambil daftar kategori milik pengguna dengan filter, pencarian, dan
+     * pagination.
      *
      * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
      * @param page Halaman data yang diminta (dimulai dari 0)
@@ -56,14 +55,7 @@ public class KategoriController {
             @RequestParam(name = "jenis", defaultValue = "0") int jenis
     ) {
         Page<Kategori> result = kategoriService.getFilteredKategori(idPengguna, jenis, keyword, page, size);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", result.getContent());
-        response.put("currentPage", result.getNumber());
-        response.put("totalItems", result.getTotalElements());
-        response.put("totalPages", result.getTotalPages());
-
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
+        return ResponseEntity.ok(GeneralResponse.fromPage(result));
     }
 
     /**
@@ -89,8 +81,10 @@ public class KategoriController {
      *
      * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
      * @param idKategori ID kategori yang akan dihapus
-     * @param ubahTransaksiKategori Jika true, pindahkan transaksi ke kategori lain
-     * @param targetKategori (Opsional) ID kategori tujuan jika transaksi ingin dipindahkan
+     * @param ubahTransaksiKategori Jika true, pindahkan transaksi ke kategori
+     * lain
+     * @param targetKategori (Opsional) ID kategori tujuan jika transaksi ingin
+     * dipindahkan
      * @return ResponseEntity sukses jika penghapusan berhasil
      */
     @DeleteMapping("/{id_kategori}")

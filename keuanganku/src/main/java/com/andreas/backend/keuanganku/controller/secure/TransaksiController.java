@@ -2,6 +2,7 @@ package com.andreas.backend.keuanganku.controller.secure;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
+import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 import com.andreas.backend.keuanganku.service.TransaksiService;
 
@@ -90,6 +92,20 @@ public class TransaksiController {
     }
 
     /**
+     * Mengambil 5 transaksi terbaru milik pengguna.
+     *
+     * @param idPengguna ID pengguna yang meminta data
+     * @return List 5 transaksi terbaru
+     */
+    @GetMapping("/recent")
+    public ResponseEntity<?> getRecentTransaksi(
+            @CurrentUserId UUID idPengguna
+    ) {
+        List<TransaksiResponse> recentTransaksi = transaksiService.getRecentTransaksi(idPengguna, 5);
+        return ResponseEntity.ok(new GeneralResponse<>("Ok", recentTransaksi, true));
+    }
+
+    /**
      * Memperbarui transaksi berdasarkan ID transaksi.
      *
      * @param idPengguna ID pengguna saat ini
@@ -122,4 +138,30 @@ public class TransaksiController {
         transaksiService.hapusTransaksi(idPengguna, idTransaksi);
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil dihapus", null, true));
     }
+
+    @GetMapping("/grafik-cashflow")
+    public ResponseEntity<?> getGrafikCashflow(
+            @CurrentUserId UUID idPengguna,
+            @RequestParam(name = "periode", defaultValue = "1") int periode // 1=mingguan, 2=bulanan, 3=tahunan
+    ) {
+        List<Map<String, Object>> data = transaksiService.getDataGrafikCashflow(idPengguna, periode);
+        return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
+    }
+
+    @GetMapping("/ringkasan")
+    public ResponseEntity<?> getRingkasanKategori(
+            @CurrentUserId UUID idPengguna,
+            @RequestParam(name = "periode", defaultValue = "1") int periode // 1=minggu, 2=bulan, 3=tahun
+    ) {
+        Map<String, List<Map<String, Object>>> data = transaksiService.getRingkasanKategori(idPengguna, periode);
+
+        return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
+    }
+
+    @GetMapping("/by-kategori-month")
+    public ResponseEntity<?> getStatistikByKategoriThisMonth(@CurrentUserId UUID idPengguna) {
+        List<KategoriStatistikResponse> result = transaksiService.getPengeluaranPerKategoriBulanIni(idPengguna);
+        return ResponseEntity.ok(new GeneralResponse<>("OK", result, true));
+    }
+
 }

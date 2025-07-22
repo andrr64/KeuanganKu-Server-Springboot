@@ -1,10 +1,11 @@
 package com.andreas.backend.keuanganku.service;
 
+import java.util.UUID;
+
 import com.andreas.backend.keuanganku.dto.request.UbahPasswordRequest;
+import com.andreas.backend.keuanganku.dto.request.UpdateAkunRequest;
 import com.andreas.backend.keuanganku.dto.request.UpdatePenggunaRequest;
 import com.andreas.backend.keuanganku.model.Pengguna;
-
-import java.util.UUID;
 
 public interface PenggunaService {
 
@@ -17,6 +18,6 @@ public interface PenggunaService {
     Pengguna login(String email, String rawPassword);
 
     Pengguna register(String nama, String email, String rawPassword);
-
+    void updateAkun(UUID idPengguna, UpdateAkunRequest request);
     boolean isPasswordLengthOk(String password);
 }

@@ -5,23 +5,27 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.andreas.backend.keuanganku.dto.request.AkunRequest;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.AkunRepository;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
+import com.andreas.backend.keuanganku.repository.TransaksiRepository;
 import com.andreas.backend.keuanganku.service.AkunService;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AkunServiceImpl implements AkunService {
 
     private final AkunRepository akunRepository;
     private final PenggunaRepository penggunaRepository;
+    private final TransaksiRepository transaksiRepository;
 
     @Override
     public Akun tambahAkun(UUID idPengguna, AkunRequest request) {
@@ -59,10 +63,21 @@ public class AkunServiceImpl implements AkunService {
     public List<Akun> getSemuaAkun(UUID idPengguna) {
         return akunRepository.findByPenggunaIdAndAktifTrue(idPengguna);
     }
-
+    
     @Override
-    public void hapusSemuaAkun(UUID idPengguna, UUID idAkun){
+    public void hapusAkunDanTransaksi(UUID idPengguna, UUID idAkun) {
+        Akun akun = akunRepository.findById(idAkun)
+                .orElseThrow(() -> new EntityNotFoundException("Akun tidak ditemukan"));
 
+        if (!akun.getPengguna().getId().equals(idPengguna)) {
+            throw new SecurityException("Anda tidak memiliki akses ke akun ini");
+        }
+
+        // Hapus semua transaksi yang terkait dengan akun
+        transaksiRepository.deleteByAkunId(idAkun);
+
+        // Hapus akun itu sendiri
+        akunRepository.delete(akun);
     }
 
 }

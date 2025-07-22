@@ -68,7 +68,8 @@ public class AkunController {
 
     @DeleteMapping("/{id_akun}")
     public ResponseEntity<?> hapusSemuaAkun(@CurrentUserId UUID idPengguna, @PathVariable("id_akun") UUID idAkun) {
-        return ResponseEntity.ok(new GeneralResponse<>("Semua akun berhasil dihapus", null, true));
+        akunService.hapusAkunDanTransaksi(idPengguna, idAkun);
+        return ResponseEntity.ok(new GeneralResponse<>("Akun berhasil dihapus", null, true));
     }
 
 }

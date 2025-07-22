@@ -1,11 +1,13 @@
 package com.andreas.backend.keuanganku.service.impl;
 
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.andreas.backend.keuanganku.dto.request.UbahPasswordRequest;
+import com.andreas.backend.keuanganku.dto.request.UpdateAkunRequest;
 import com.andreas.backend.keuanganku.dto.request.UpdatePenggunaRequest;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
@@ -108,4 +110,33 @@ public class PenggunaServiceImpl implements PenggunaService {
     public boolean isPasswordLengthOk(String password) {
         return password != null && password.length() >= 10;
     }
+    
+    @Override
+    public void updateAkun(UUID idPengguna, UpdateAkunRequest request) {
+        // Validasi input
+        if (request.getNama() == null || request.getEmail() == null || request.getPasswordKonfirmasi() == null) {
+            throw new IllegalArgumentException("Data tidak lengkap.");
+        }
+
+        // Ambil pengguna
+        Pengguna pengguna = penggunaRepo.findById(idPengguna)
+                .orElseThrow(() -> new NoSuchElementException("Pengguna tidak ditemukan."));
+
+        // Cek password lama
+        if (!passwordEncoder.matches(request.getPasswordKonfirmasi(), pengguna.getPassword())) {
+            throw new SecurityException("Password lama salah.");
+        }
+
+        // Update nama & email
+        pengguna.setNama(request.getNama());
+        pengguna.setEmail(request.getEmail());
+
+        // Jika password baru ada
+        if (request.getPasswordBaru() != null && !request.getPasswordBaru().isBlank()) {
+            pengguna.setPassword(passwordEncoder.encode(request.getPasswordBaru()));
+        }
+
+        penggunaRepo.save(pengguna);
+    }
+
 }

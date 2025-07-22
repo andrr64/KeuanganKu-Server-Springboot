@@ -9,10 +9,7 @@ import com.andreas.backend.keuanganku.model.Akun;
 public interface AkunService {
 
     Akun tambahAkun(UUID idPengguna, AkunRequest request);
-
     void updateNamaAkun(UUID idPengguna, UUID idAkun, String namaBaru);
-
     List<Akun> getSemuaAkun(UUID idPengguna);
-
-    void hapusSemuaAkun(UUID idPengguna, UUID idAkun);
+    void hapusAkunDanTransaksi(UUID idPengguna, UUID idAkun);
 }

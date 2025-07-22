@@ -3,9 +3,16 @@ package com.andreas.backend.keuanganku.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.andreas.backend.keuanganku.SysVar;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
+import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
+import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.model.Kategori;
@@ -294,4 +303,164 @@ public class TransaksiServiceImpl implements TransaksiService {
         ));
     }
 
+    @Override
+    public List<TransaksiResponse> getRecentTransaksi(UUID idPengguna, int jumlah) {
+        Pageable pageable = PageRequest.of(0, jumlah, Sort.by("tanggal").descending());
+
+        Page<Transaksi> page = transaksiRepo.findByPengguna_Id(idPengguna, pageable);
+
+        return page.getContent().stream()
+                .map(t -> new TransaksiResponse(
+                t.getId(),
+                t.getAkun().getId(),
+                t.getKategori() != null ? t.getKategori().getNama() : "Tanpa Kategori",
+                t.getAkun().getNama(),
+                t.getKategori() != null ? t.getKategori().getJenis() : 0,
+                t.getJumlah(),
+                t.getCatatan(),
+                t.getTanggal(),
+                t.getKategori()
+        ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DashboardResponse getDashboardData(UUID idPengguna) {
+        BigDecimal saldo = transaksiRepo.getTotalSaldo(idPengguna); // saldo = pemasukan - pengeluaran
+        BigDecimal pemasukan = transaksiRepo.getTotalPemasukanBulanIni(idPengguna);
+        BigDecimal pengeluaran = transaksiRepo.getTotalPengeluaranBulanIni(idPengguna);
+        BigDecimal cashflow = pemasukan.subtract(pengeluaran);
+
+        return new DashboardResponse(saldo, pemasukan, pengeluaran, cashflow);
+    }
+
+    @Override
+    public List<Map<String, Object>> getDataGrafikCashflow(UUID idPengguna, int periode) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        YearMonth currentYearMonth = YearMonth.from(today);
+
+        switch (periode) {
+            case 1 -> {
+                // Mingguan (7 hari terakhir)
+                for (int i = 6; i >= 0; i--) {
+                    LocalDate tanggal = today.minusDays(i);
+                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
+
+                    result.add(Map.of(
+                            "tanggal", tanggal.getDayOfMonth() + " " + tanggal.getMonth().name().substring(0, 3),
+                            "pemasukan", pemasukan,
+                            "pengeluaran", pengeluaran
+                    ));
+                }
+            }
+            case 2 -> {
+                // Bulanan (hari 1 sampai akhir bulan)
+                int daysInMonth = currentYearMonth.lengthOfMonth();
+                for (int day = 1; day <= daysInMonth; day++) {
+                    LocalDate tanggal = LocalDate.of(today.getYear(), today.getMonth(), day);
+                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
+
+                    result.add(Map.of(
+                            "tanggal", String.valueOf(day),
+                            "pemasukan", pemasukan,
+                            "pengeluaran", pengeluaran
+                    ));
+                }
+            }
+            default -> {
+                // Tahunan (per bulan)
+                for (int i = 1; i <= 12; i++) {
+                    BigDecimal pemasukan = transaksiRepo.getTotalByBulan(idPengguna, i, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByBulan(idPengguna, i, 1);
+
+                    result.add(Map.of(
+                            "tanggal", Month.of(i).name().substring(0, 3),
+                            "pemasukan", pemasukan,
+                            "pengeluaran", pengeluaran
+                    ));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public Map<String, List<Map<String, Object>>> getRingkasanKategori(UUID idPengguna, int periode) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime = today.atTime(LocalTime.MAX); // End of day
+
+        switch (periode) {
+            case 1: // 7 hari terakhir
+                startDateTime = today.minusDays(6).atStartOfDay();
+                break;
+            case 2: // Bulan ini
+                startDateTime = today.withDayOfMonth(1).atStartOfDay();
+                break;
+            case 3: // Tahun ini
+                startDateTime = today.withDayOfYear(1).atStartOfDay();
+                break;
+            default: // Default to today
+                startDateTime = today.atStartOfDay();
+        }
+
+        List<Object[]> hasil = transaksiRepo.getRingkasanKategori(idPengguna, startDateTime, endDateTime);
+
+        List<Map<String, Object>> pemasukan = new ArrayList<>();
+        List<Map<String, Object>> pengeluaran = new ArrayList<>();
+
+        for (Object[] row : hasil) {
+            String namaKategori = (String) row[0];
+            BigDecimal total = (BigDecimal) row[1]; // Using BigDecimal for monetary values
+            Integer jenis = (Integer) row[2];
+
+            Map<String, Object> item = new LinkedHashMap<>(); // Maintains insertion order
+            item.put("label", namaKategori);
+            item.put("value", total);
+
+            if (jenis == 1) {
+                pengeluaran.add(item);
+            } else if (jenis == 2) {
+                pemasukan.add(item);
+            }
+        }
+
+        // Sort by value descending
+        pemasukan.sort((a, b) -> ((BigDecimal) b.get("value")).compareTo((BigDecimal) a.get("value")));
+        pengeluaran.sort((a, b) -> ((BigDecimal) b.get("value")).compareTo((BigDecimal) a.get("value")));
+
+        Map<String, List<Map<String, Object>>> hasilMap = new LinkedHashMap<>();
+        hasilMap.put("pengeluaran", pengeluaran);
+        hasilMap.put("pemasukan", pemasukan);
+
+        return hasilMap;
+    }
+
+@Override
+public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna) {
+    LocalDate now = LocalDate.now();
+    LocalDate awalBulan = now.withDayOfMonth(1);
+    
+    // Convert LocalDate to LocalDateTime at start and end of day
+    LocalDateTime startDateTime = awalBulan.atStartOfDay();
+    LocalDateTime endDateTime = now.atTime(LocalTime.MAX);
+
+    List<Object[]> data = transaksiRepo.getTotalPengeluaranByKategoriBetween(
+            idPengguna,
+            startDateTime,
+            endDateTime
+    );
+
+    return data.stream()
+            .map(obj -> new KategoriStatistikResponse(
+                    (String) obj[0], // namaKategori
+                    ((BigDecimal) obj[1]) // totalPengeluaran as BigDecimal
+            ))
+            .sorted((a, b) -> b.getTotalPengeluaran().compareTo(a.getTotalPengeluaran())) // Sort descending
+            .collect(Collectors.toList());
+}
 }

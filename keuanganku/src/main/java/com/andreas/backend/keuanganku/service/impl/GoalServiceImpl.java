@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -12,9 +11,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.andreas.backend.keuanganku.dto.request.GoalRequest;
-import com.andreas.backend.keuanganku.dto.request.TambahDanaGoalRequest;
-import com.andreas.backend.keuanganku.dto.request.UpdateGoalRequest;
+import com.andreas.backend.keuanganku.dto.request.goal.GoalRequest;
+import com.andreas.backend.keuanganku.dto.request.goal.UpdateGoalRequest;
 import com.andreas.backend.keuanganku.dto.response.GoalResponse;
 import com.andreas.backend.keuanganku.model.Goal;
 import com.andreas.backend.keuanganku.model.Pengguna;
@@ -72,17 +70,6 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
-    public List<GoalResponse> getAllGoals(UUID userId, Boolean tercapai) {
-        List<Goal> goals;
-        if (tercapai != null) {
-            goals = goalRepo.findByPengguna_IdAndTercapai(userId, tercapai);
-        } else {
-            goals = goalRepo.findByPengguna_Id(userId);
-        }
-        return goals.stream().map(this::toResponse).toList();
-    }
-
-    @Override
     public void updateStatusTercapai(UUID userId, UUID id, boolean status) {
         Goal goal = goalRepo.findByIdAndPengguna_Id(id, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
@@ -96,13 +83,6 @@ public class GoalServiceImpl implements GoalService {
         }
 
         goalRepo.save(goal);
-    }
-
-    @Override
-    public GoalResponse getById(UUID userId, UUID goalId) {
-        Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
-        return toResponse(goal);
     }
 
     @Override
@@ -143,37 +123,6 @@ public class GoalServiceImpl implements GoalService {
                 throw new IllegalArgumentException("Tanggal harus dalam format dd/MM/yyyy");
             }
         }
-        goalRepo.save(goal);
-    }
-
-    @Override
-    public void tambahDana(UUID userId, UUID goalId, TambahDanaGoalRequest request) {
-        if (request.getJumlah() == null || request.getJumlah().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Jumlah harus positif");
-        }
-
-        Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
-
-        BigDecimal total = goal.getTerkumpul().add(request.getJumlah());
-        if (total.compareTo(goal.getTarget()) > 0) {
-            throw new IllegalArgumentException("Jumlah melebihi target");
-        }
-
-        goal.setTerkumpul(total);
-        if (total.compareTo(goal.getTarget()) == 0) {
-            goal.setTercapai(true);
-        }
-
-        goalRepo.save(goal);
-    }
-
-    @Override
-    public void tandaiTercapai(UUID userId, UUID goalId) {
-        Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
-
-        goal.setTercapai(true);
         goalRepo.save(goal);
     }
 

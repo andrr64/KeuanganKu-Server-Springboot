@@ -1,4 +1,4 @@
-package com.andreas.backend.keuanganku.dto.request;
+package com.andreas.backend.keuanganku.dto.request.goal;
 
 import java.math.BigDecimal;
 

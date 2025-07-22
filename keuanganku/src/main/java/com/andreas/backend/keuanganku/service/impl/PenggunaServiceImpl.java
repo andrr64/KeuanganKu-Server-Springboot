@@ -6,9 +6,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.andreas.backend.keuanganku.dto.request.UbahPasswordRequest;
-import com.andreas.backend.keuanganku.dto.request.UpdateAkunRequest;
-import com.andreas.backend.keuanganku.dto.request.UpdatePenggunaRequest;
+import com.andreas.backend.keuanganku.dto.request.pengguna.UpdatePenggunaRequest;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.service.PenggunaService;
@@ -27,50 +25,6 @@ public class PenggunaServiceImpl implements PenggunaService {
     public Pengguna getById(UUID id) {
         return penggunaRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan"));
-    }
-
-    @Override
-    public void updateNamaAtauEmail(UUID id, UpdatePenggunaRequest request) {
-        if ((request.getNama() == null || request.getNama().isBlank())
-                && (request.getEmail() == null || request.getEmail().isBlank())) {
-            throw new IllegalArgumentException("Minimal nama atau email harus diisi");
-        }
-
-        Pengguna pengguna = getById(id);
-
-        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(pengguna.getEmail())) {
-            boolean emailSudahDipakai = penggunaRepo.existsByEmailIgnoreCase(request.getEmail());
-            if (emailSudahDipakai) {
-                throw new IllegalArgumentException("Email sudah digunakan");
-            }
-            pengguna.setEmail(request.getEmail());
-        }
-
-        if (request.getNama() != null) {
-            pengguna.setNama(request.getNama());
-        }
-
-        penggunaRepo.save(pengguna);
-    }
-
-    @Override
-    public void ubahPassword(UUID id, UbahPasswordRequest request) {
-        Pengguna pengguna = getById(id);
-
-        if (!passwordEncoder.matches(request.getPasswordLama(), pengguna.getPassword())) {
-            throw new IllegalArgumentException("Password lama salah");
-        }
-
-        if (passwordEncoder.matches(request.getPasswordBaru(), pengguna.getPassword())) {
-            throw new IllegalArgumentException("Password baru tidak boleh sama dengan password lama");
-        }
-
-        if (!isPasswordLengthOk(request.getPasswordBaru())) {
-            throw new IllegalArgumentException("Password baru minimal 10 karakter");
-        }
-
-        pengguna.setPassword(passwordEncoder.encode(request.getPasswordBaru()));
-        penggunaRepo.save(pengguna);
     }
 
     @Override
@@ -112,7 +66,7 @@ public class PenggunaServiceImpl implements PenggunaService {
     }
     
     @Override
-    public void updateAkun(UUID idPengguna, UpdateAkunRequest request) {
+    public void updateAkun(UUID idPengguna, UpdatePenggunaRequest request) {
         // Validasi input
         if (request.getNama() == null || request.getEmail() == null || request.getPasswordKonfirmasi() == null) {
             throw new IllegalArgumentException("Data tidak lengkap.");

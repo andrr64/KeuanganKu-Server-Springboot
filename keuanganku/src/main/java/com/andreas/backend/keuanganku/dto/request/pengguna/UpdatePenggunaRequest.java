@@ -1,6 +1,6 @@
-package com.andreas.backend.keuanganku.dto.request;
+package com.andreas.backend.keuanganku.dto.request.pengguna;
 
-public class UpdateAkunRequest {
+public class UpdatePenggunaRequest {
     private String nama;
     private String email;
     private String passwordKonfirmasi;

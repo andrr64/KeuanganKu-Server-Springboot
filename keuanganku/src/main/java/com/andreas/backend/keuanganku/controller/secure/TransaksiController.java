@@ -1,9 +1,7 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -22,146 +20,119 @@ import org.springframework.web.bind.annotation.RestController;
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
-import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 import com.andreas.backend.keuanganku.service.TransaksiService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/secure/transaksi")
 @RequiredArgsConstructor
+@Tag(name = "Transaksi", description = "Operasi terkait transaksi pengguna")
 public class TransaksiController {
 
     private final TransaksiService transaksiService;
 
-    /**
-     * Menambahkan transaksi baru milik pengguna.
-     *
-     * @param idPengguna ID pengguna yang melakukan request
-     * @param request Data transaksi yang akan ditambahkan
-     * @return Response sukses jika berhasil menambahkan
-     */
     @PostMapping
+    @Operation(summary = "Tambah transaksi", description = "Menambahkan transaksi baru ke akun pengguna.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Transaksi berhasil ditambahkan")
+    })
     public ResponseEntity<?> tambahTransaksi(
-            @CurrentUserId UUID idPengguna,
+            @Parameter(hidden = true) @CurrentUserId UUID idPengguna,
             @Valid @RequestBody TransaksiRequest request
     ) {
         transaksiService.tambahTransaksi(idPengguna, request);
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil ditambahkan", null, true));
     }
 
-    /**
-     * Mengambil daftar transaksi berdasarkan filter.
-     *
-     * @param idPengguna ID pengguna yang meminta data
-     * @param startDate Tanggal mulai filter (opsional, format dd/MM/yyyy)
-     * @param endDate Tanggal akhir filter (opsional, format dd/MM/yyyy)
-     * @param jenis Jenis kategori (1 = pengeluaran, 2 = pemasukan, null =
-     * semua)
-     * @param idAkun ID akun tertentu untuk memfilter (opsional)
-     * @param page Nomor halaman (dimulai dari 0)
-     * @param keyword Kata kunci pencarian pada catatan atau nama kategori
-     * (opsional)
-     * @param size Jumlah data per halaman
-     * @return Data transaksi yang sudah difilter dalam bentuk paginasi
-     */
-    @GetMapping()
+    @GetMapping
+    @Operation(summary = "Ambil daftar transaksi", description = "Mengambil daftar transaksi berdasarkan filter tanggal, jenis, akun, keyword, dan pagination.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Berhasil mengambil daftar transaksi")
+    })
     public ResponseEntity<?> getTransaksi(
-            @CurrentUserId UUID idPengguna,
-            @RequestParam(name = "startDate", required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate startDate,
-            @RequestParam(name = "endDate", required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate endDate,
+            @Parameter(hidden = true) @CurrentUserId UUID idPengguna,
+
+            @Parameter(description = "Tanggal awal (format: dd/MM/yyyy)", example = "01/07/2025")
+            @RequestParam(name = "startDate", required = false)
+            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate startDate,
+
+            @Parameter(description = "Tanggal akhir (format: dd/MM/yyyy)", example = "31/07/2025")
+            @RequestParam(name = "endDate", required = false)
+            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate endDate,
+
+            @Parameter(description = "Jenis transaksi (1 = pengeluaran, 2 = pemasukan)", example = "1")
             @RequestParam(name = "jenis", required = false) Integer jenis,
+
+            @Parameter(description = "ID akun pengguna") 
             @RequestParam(name = "idAkun", required = false) UUID idAkun,
+
+            @Parameter(description = "Nomor halaman (mulai dari 0)", example = "0")
             @RequestParam(name = "page", defaultValue = "0") int page,
+
+            @Parameter(description = "Keyword untuk pencarian deskripsi transaksi")
             @RequestParam(name = "keyword", required = false) String keyword,
+
+            @Parameter(description = "Jumlah item per halaman", example = "10")
             @RequestParam(name = "size", defaultValue = "10") int size
     ) {
         Page<TransaksiResponse> daftar = transaksiService.getFilteredTransaksi(
                 idPengguna, keyword, startDate, endDate, jenis, idAkun, page, size
         );
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", daftar.getContent());
-        response.put("currentPage", daftar.getNumber());
-        response.put("totalItems", daftar.getTotalElements());
-        response.put("totalPages", daftar.getTotalPages());
-
-        return ResponseEntity.ok(new GeneralResponse<>("Ok", response, true));
+        return ResponseEntity.ok(GeneralResponse.fromPage(daftar));
     }
 
-    /**
-     * Mengambil 5 transaksi terbaru milik pengguna.
-     *
-     * @param idPengguna ID pengguna yang meminta data
-     * @return List 5 transaksi terbaru
-     */
-    @GetMapping("/recent")
+    @GetMapping("/data-terbaru")
+    @Operation(summary = "Ambil transaksi terbaru", description = "Mengambil transaksi terbaru dari pengguna dengan jumlah maksimum tertentu.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Berhasil mengambil transaksi terbaru")
+    })
     public ResponseEntity<?> getRecentTransaksi(
-            @CurrentUserId UUID idPengguna
+            @Parameter(hidden = true) @CurrentUserId UUID idPengguna,
+
+            @Parameter(description = "Jumlah maksimum transaksi yang ditampilkan", example = "5")
+            @RequestParam(name = "limit", defaultValue = "5") int limit
     ) {
-        List<TransaksiResponse> recentTransaksi = transaksiService.getRecentTransaksi(idPengguna, 5);
+        List<TransaksiResponse> recentTransaksi = transaksiService.getRecentTransaksi(idPengguna, limit);
         return ResponseEntity.ok(new GeneralResponse<>("Ok", recentTransaksi, true));
     }
 
-    /**
-     * Memperbarui transaksi berdasarkan ID transaksi.
-     *
-     * @param idPengguna ID pengguna saat ini
-     * @param idTransaksi ID transaksi yang akan diperbarui
-     * @param request Data transaksi yang baru
-     * @return Respon sukses jika berhasil diperbarui
-     */
     @PutMapping("/{id_transaksi}")
+    @Operation(summary = "Update transaksi", description = "Memperbarui data transaksi yang sudah ada berdasarkan ID.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Transaksi berhasil diperbarui")
+    })
     public ResponseEntity<?> updateTransaksi(
-            @CurrentUserId UUID idPengguna,
+            @Parameter(hidden = true) @CurrentUserId UUID idPengguna,
+
+            @Parameter(description = "ID transaksi yang akan diperbarui", example = "e4fbb111-5ab1-4e4b-87a0-64f54f9c2df0")
             @PathVariable("id_transaksi") UUID idTransaksi,
+
             @Valid @RequestBody TransaksiRequest request
     ) {
         transaksiService.updateTransaksi(idPengguna, idTransaksi, request);
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil diperbarui", null, true));
     }
 
-    /**
-     * Menghapus transaksi berdasarkan ID.
-     *
-     * @param idPengguna ID pengguna saat ini
-     * @param idTransaksi ID transaksi yang akan dihapus
-     * @return Respon sukses jika berhasil dihapus
-     */
     @DeleteMapping("/{id_transaksi}")
+    @Operation(summary = "Hapus transaksi", description = "Menghapus transaksi berdasarkan ID milik pengguna.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Transaksi berhasil dihapus")
+    })
     public ResponseEntity<?> hapusTransaksi(
-            @CurrentUserId UUID idPengguna,
+            @Parameter(hidden = true) @CurrentUserId UUID idPengguna,
+
+            @Parameter(description = "ID transaksi yang akan dihapus", example = "e4fbb111-5ab1-4e4b-87a0-64f54f9c2df0")
             @PathVariable("id_transaksi") UUID idTransaksi
     ) {
         transaksiService.hapusTransaksi(idPengguna, idTransaksi);
         return ResponseEntity.ok(new GeneralResponse<>("Transaksi berhasil dihapus", null, true));
     }
-
-    @GetMapping("/grafik-cashflow")
-    public ResponseEntity<?> getGrafikCashflow(
-            @CurrentUserId UUID idPengguna,
-            @RequestParam(name = "periode", defaultValue = "1") int periode // 1=mingguan, 2=bulanan, 3=tahunan
-    ) {
-        List<Map<String, Object>> data = transaksiService.getDataGrafikCashflow(idPengguna, periode);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
-    }
-
-    @GetMapping("/ringkasan")
-    public ResponseEntity<?> getRingkasanKategori(
-            @CurrentUserId UUID idPengguna,
-            @RequestParam(name = "periode", defaultValue = "1") int periode // 1=minggu, 2=bulan, 3=tahun
-    ) {
-        Map<String, List<Map<String, Object>>> data = transaksiService.getRingkasanKategori(idPengguna, periode);
-
-        return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
-    }
-
-    @GetMapping("/by-kategori-month")
-    public ResponseEntity<?> getStatistikByKategoriThisMonth(@CurrentUserId UUID idPengguna) {
-        List<KategoriStatistikResponse> result = transaksiService.getPengeluaranPerKategoriBulanIni(idPengguna);
-        return ResponseEntity.ok(new GeneralResponse<>("OK", result, true));
-    }
-
 }

@@ -2,14 +2,15 @@ package com.andreas.backend.keuanganku.service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 
+import com.andreas.backend.keuanganku.dto.CashflowItem;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
 import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
 import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
+import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 
 public interface TransaksiService {
@@ -18,7 +19,7 @@ public interface TransaksiService {
 
     public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna);
 
-    public List<Map<String, Object>> getDataGrafikCashflow(UUID idPengguna, int periode);
+    public List<CashflowItem> getDataGrafikCashflow(UUID idPengguna, int periode);
 
     void tambahTransaksi(UUID idPengguna, TransaksiRequest request);
 
@@ -30,7 +31,7 @@ public interface TransaksiService {
 
     List<TransaksiResponse> getRecentTransaksi(UUID idPengguna, int jumlah);
 
-    Map<String, List<Map<String, Object>>> getRingkasanKategori(UUID idPengguna, int periode);
+    RingkasanTransaksiKategoriResponse getDataTransaksiWaktuTertentu(UUID idPengguna, int periode);
 
     Page<TransaksiResponse> getFilteredTransaksi(
             UUID idPengguna,

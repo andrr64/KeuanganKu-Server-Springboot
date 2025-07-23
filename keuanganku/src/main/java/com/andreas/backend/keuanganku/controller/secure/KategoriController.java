@@ -35,18 +35,7 @@ public class KategoriController {
 
     private final KategoriService kategoriService;
 
-    /**
-     * Mengambil daftar kategori milik pengguna dengan filter, pencarian, dan
-     * pagination.
-     *
-     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
-     * @param page Halaman data yang diminta (dimulai dari 0)
-     * @param size Jumlah data per halaman
-     * @param keyword Kata kunci pencarian nama kategori (opsional)
-     * @param jenis Jenis kategori: 0 = semua, 1 = Pengeluaran, 2 = Pemasukan
-     * @return ResponseEntity berisi data kategori dalam format paginasi
-     */
-    @GetMapping("/filter")
+    @GetMapping()
     public ResponseEntity<?> getKategoriFiltered(
             @CurrentUserId UUID idPengguna,
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -58,14 +47,6 @@ public class KategoriController {
         return ResponseEntity.ok(GeneralResponse.fromPage(result));
     }
 
-    /**
-     * Memperbarui nama kategori berdasarkan ID kategori.
-     *
-     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
-     * @param idKategori ID kategori yang ingin diperbarui
-     * @param request Payload berisi nama baru kategori
-     * @return ResponseEntity sukses jika pembaruan berhasil
-     */
     @PutMapping("/{id_kategori}")
     public ResponseEntity<?> updateKategori(
             @CurrentUserId UUID idPengguna,
@@ -76,17 +57,6 @@ public class KategoriController {
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil diperbarui", null, true));
     }
 
-    /**
-     * Menghapus kategori berdasarkan ID kategori.
-     *
-     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
-     * @param idKategori ID kategori yang akan dihapus
-     * @param ubahTransaksiKategori Jika true, pindahkan transaksi ke kategori
-     * lain
-     * @param targetKategori (Opsional) ID kategori tujuan jika transaksi ingin
-     * dipindahkan
-     * @return ResponseEntity sukses jika penghapusan berhasil
-     */
     @DeleteMapping("/{id_kategori}")
     public ResponseEntity<?> hapusKategori(
             @CurrentUserId UUID idPengguna,
@@ -98,13 +68,6 @@ public class KategoriController {
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus", null, true));
     }
 
-    /**
-     * Menambahkan kategori baru untuk pengguna.
-     *
-     * @param idPengguna ID pengguna dari token JWT (di-inject otomatis)
-     * @param request Payload berisi nama dan jenis kategori
-     * @return ResponseEntity sukses jika penambahan berhasil
-     */
     @PostMapping()
     public ResponseEntity<?> tambahKategori(
             @CurrentUserId UUID idPengguna,

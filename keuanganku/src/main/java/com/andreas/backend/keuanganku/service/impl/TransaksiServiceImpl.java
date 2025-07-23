@@ -8,9 +8,8 @@ import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,9 +21,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.andreas.backend.keuanganku.SysVar;
+import com.andreas.backend.keuanganku.dto.CashflowItem;
+import com.andreas.backend.keuanganku.dto.SumTransaksiKategori;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
 import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
 import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
+import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.model.Kategori;
@@ -238,15 +240,18 @@ public class TransaksiServiceImpl implements TransaksiService {
         }
 
         // Logika berdasarkan jenis kategori
-        if (jenis == 1) { // Pengeluaran
-            akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah())); // rollback saldo
-        } else if (jenis == 2) { // Pemasukan
-            if (akun.getSaldo().compareTo(transaksi.getJumlah()) < 0) {
-                throw new IllegalArgumentException("Saldo tidak mencukupi untuk menghapus transaksi pemasukan ini");
+        switch (jenis) {
+            case 1 -> // Pengeluaran
+                akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah())); // rollback saldo
+            case 2 -> {
+                // Pemasukan
+                if (akun.getSaldo().compareTo(transaksi.getJumlah()) < 0) {
+                    throw new IllegalArgumentException("Saldo tidak mencukupi untuk menghapus transaksi pemasukan ini");
+                }
+                akun.setSaldo(akun.getSaldo().subtract(transaksi.getJumlah()));
             }
-            akun.setSaldo(akun.getSaldo().subtract(transaksi.getJumlah()));
-        } else {
-            throw new IllegalArgumentException("Jenis kategori tidak valid (harus 1 atau 2)");
+            default ->
+                throw new IllegalArgumentException("Jenis kategori tidak valid (harus 1 atau 2)");
         }
 
         akunRepo.save(akun);             // Simpan update saldo
@@ -325,18 +330,8 @@ public class TransaksiServiceImpl implements TransaksiService {
     }
 
     @Override
-    public DashboardResponse getDashboardData(UUID idPengguna) {
-        BigDecimal saldo = transaksiRepo.getTotalSaldo(idPengguna); // saldo = pemasukan - pengeluaran
-        BigDecimal pemasukan = transaksiRepo.getTotalPemasukanBulanIni(idPengguna);
-        BigDecimal pengeluaran = transaksiRepo.getTotalPengeluaranBulanIni(idPengguna);
-        BigDecimal cashflow = pemasukan.subtract(pengeluaran);
-
-        return new DashboardResponse(saldo, pemasukan, pengeluaran, cashflow);
-    }
-
-    @Override
-    public List<Map<String, Object>> getDataGrafikCashflow(UUID idPengguna, int periode) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<CashflowItem> getDataGrafikCashflow(UUID idPengguna, int periode) {
+        List<CashflowItem> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
         YearMonth currentYearMonth = YearMonth.from(today);
 
@@ -348,38 +343,38 @@ public class TransaksiServiceImpl implements TransaksiService {
                     BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
                     BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
 
-                    result.add(Map.of(
-                            "tanggal", tanggal.getDayOfMonth() + " " + tanggal.getMonth().name().substring(0, 3),
-                            "pemasukan", pemasukan,
-                            "pengeluaran", pengeluaran
+                    result.add(new CashflowItem(
+                            tanggal.getDayOfMonth() + " " + tanggal.getMonth().name().substring(0, 3),
+                            pemasukan.doubleValue(),
+                            pengeluaran.doubleValue()
                     ));
                 }
             }
             case 2 -> {
-                // Bulanan (hari 1 sampai akhir bulan)
+                // Bulanan
                 int daysInMonth = currentYearMonth.lengthOfMonth();
                 for (int day = 1; day <= daysInMonth; day++) {
                     LocalDate tanggal = LocalDate.of(today.getYear(), today.getMonth(), day);
                     BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
                     BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
 
-                    result.add(Map.of(
-                            "tanggal", String.valueOf(day),
-                            "pemasukan", pemasukan,
-                            "pengeluaran", pengeluaran
+                    result.add(new CashflowItem(
+                            String.valueOf(day),
+                            pemasukan.doubleValue(),
+                            pengeluaran.doubleValue()
                     ));
                 }
             }
             default -> {
-                // Tahunan (per bulan)
+                // Tahunan
                 for (int i = 1; i <= 12; i++) {
                     BigDecimal pemasukan = transaksiRepo.getTotalByBulan(idPengguna, i, 2);
                     BigDecimal pengeluaran = transaksiRepo.getTotalByBulan(idPengguna, i, 1);
 
-                    result.add(Map.of(
-                            "tanggal", Month.of(i).name().substring(0, 3),
-                            "pemasukan", pemasukan,
-                            "pengeluaran", pengeluaran
+                    result.add(new CashflowItem(
+                            Month.of(i).name().substring(0, 3),
+                            pemasukan.doubleValue(),
+                            pengeluaran.doubleValue()
                     ));
                 }
             }
@@ -389,78 +384,80 @@ public class TransaksiServiceImpl implements TransaksiService {
     }
 
     @Override
-    public Map<String, List<Map<String, Object>>> getRingkasanKategori(UUID idPengguna, int periode) {
+    public RingkasanTransaksiKategoriResponse getDataTransaksiWaktuTertentu(UUID idPengguna, int periode) {
         LocalDate today = LocalDate.now();
         LocalDateTime startDateTime;
-        LocalDateTime endDateTime = today.atTime(LocalTime.MAX); // End of day
+        LocalDateTime endDateTime = today.atTime(LocalTime.MAX);
 
-        switch (periode) {
-            case 1: // 7 hari terakhir
-                startDateTime = today.minusDays(6).atStartOfDay();
-                break;
-            case 2: // Bulan ini
-                startDateTime = today.withDayOfMonth(1).atStartOfDay();
-                break;
-            case 3: // Tahun ini
-                startDateTime = today.withDayOfYear(1).atStartOfDay();
-                break;
-            default: // Default to today
-                startDateTime = today.atStartOfDay();
-        }
+        startDateTime = switch (periode) {
+            case 1 ->
+                today.minusDays(6).atStartOfDay();      // 7 hari terakhir
+            case 2 ->
+                today.withDayOfMonth(1).atStartOfDay();   // Bulan ini
+            case 3 ->
+                today.withDayOfYear(1).atStartOfDay();    // Tahun ini
+            default ->
+                today.atStartOfDay();                   // Hari ini
+        };
 
-        List<Object[]> hasil = transaksiRepo.getRingkasanKategori(idPengguna, startDateTime, endDateTime);
+        // Repository call (asumsi nama method sudah benar)
+        List<Object[]> hasilRepo = transaksiRepo.getRingkasanKategori(idPengguna, startDateTime, endDateTime);
 
-        List<Map<String, Object>> pemasukan = new ArrayList<>();
-        List<Map<String, Object>> pengeluaran = new ArrayList<>();
+        // 2. Buat instance dari DTO Respons utama
+        RingkasanTransaksiKategoriResponse response = new RingkasanTransaksiKategoriResponse();
 
-        for (Object[] row : hasil) {
+        for (Object[] row : hasilRepo) {
             String namaKategori = (String) row[0];
-            BigDecimal total = (BigDecimal) row[1]; // Using BigDecimal for monetary values
+            BigDecimal total = (BigDecimal) row[1];
             Integer jenis = (Integer) row[2];
 
-            Map<String, Object> item = new LinkedHashMap<>(); // Maintains insertion order
-            item.put("label", namaKategori);
-            item.put("value", total);
+            // Buat DTO item untuk setiap baris data
+            SumTransaksiKategori item = new SumTransaksiKategori(namaKategori, total);
 
+            // Masukkan item ke list yang sesuai di dalam objek respons
             if (jenis == 1) {
-                pengeluaran.add(item);
+                response.getPengeluaran().add(item);
             } else if (jenis == 2) {
-                pemasukan.add(item);
+                response.getPemasukan().add(item);
             }
         }
 
-        // Sort by value descending
-        pemasukan.sort((a, b) -> ((BigDecimal) b.get("value")).compareTo((BigDecimal) a.get("value")));
-        pengeluaran.sort((a, b) -> ((BigDecimal) b.get("value")).compareTo((BigDecimal) a.get("value")));
+        // 3. Perbaiki logika sorting menjadi type-safe
+        Comparator<SumTransaksiKategori> valueComparator = (a, b) -> b.getValue().compareTo(a.getValue());
+        response.getPemasukan().sort(valueComparator);
+        response.getPengeluaran().sort(valueComparator);
 
-        Map<String, List<Map<String, Object>>> hasilMap = new LinkedHashMap<>();
-        hasilMap.put("pengeluaran", pengeluaran);
-        hasilMap.put("pemasukan", pemasukan);
-
-        return hasilMap;
+        // 4. Kembalikan objek DTO yang sudah lengkap
+        return response;
     }
 
-@Override
-public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna) {
-    LocalDate now = LocalDate.now();
-    LocalDate awalBulan = now.withDayOfMonth(1);
-    
-    // Convert LocalDate to LocalDateTime at start and end of day
-    LocalDateTime startDateTime = awalBulan.atStartOfDay();
-    LocalDateTime endDateTime = now.atTime(LocalTime.MAX);
+    @Override
+    public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna) {
+        LocalDate now = LocalDate.now();
+        LocalDate awalBulan = now.withDayOfMonth(1);
 
-    List<Object[]> data = transaksiRepo.getTotalPengeluaranByKategoriBetween(
-            idPengguna,
-            startDateTime,
-            endDateTime
-    );
+        // Convert LocalDate to LocalDateTime at start and end of day
+        LocalDateTime startDateTime = awalBulan.atStartOfDay();
+        LocalDateTime endDateTime = now.atTime(LocalTime.MAX);
 
-    return data.stream()
-            .map(obj -> new KategoriStatistikResponse(
-                    (String) obj[0], // namaKategori
-                    ((BigDecimal) obj[1]) // totalPengeluaran as BigDecimal
-            ))
-            .sorted((a, b) -> b.getTotalPengeluaran().compareTo(a.getTotalPengeluaran())) // Sort descending
-            .collect(Collectors.toList());
-}
+        List<Object[]> data = transaksiRepo.getTotalPengeluaranByKategoriBetween(
+                idPengguna,
+                startDateTime,
+                endDateTime
+        );
+
+        return data.stream()
+                .map(obj -> new KategoriStatistikResponse(
+                (String) obj[0], // namaKategori
+                ((BigDecimal) obj[1]) // totalPengeluaran as BigDecimal
+        ))
+                .sorted((a, b) -> b.getTotalPengeluaran().compareTo(a.getTotalPengeluaran())) // Sort descending
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DashboardResponse getDashboardData(UUID idPengguna) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getDashboardData'");
+    }
 }

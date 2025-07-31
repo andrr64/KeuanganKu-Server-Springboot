@@ -18,12 +18,7 @@ import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.service.PenggunaService;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -35,18 +30,6 @@ public class PenggunaController {
 
     private final PenggunaService penggunaService;
 
-    @Operation(
-        summary = "Ambil detail pengguna saat ini",
-        description = "Mengembalikan nama dan email pengguna berdasarkan ID pengguna saat ini."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Berhasil ambil data pengguna", 
-            content = @Content(schema = @Schema(implementation = GeneralResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Pengguna tidak ditemukan", 
-            content = @Content(schema = @Schema())),
-        @ApiResponse(responseCode = "500", description = "Kesalahan server", 
-            content = @Content(schema = @Schema()))
-    })
     @GetMapping("/me")
     public ResponseEntity<?> getDetailPengguna(
         @Parameter(description = "ID pengguna saat ini", hidden = true)
@@ -57,22 +40,6 @@ public class PenggunaController {
         return ResponseEntity.ok(new GeneralResponse<>("Berhasil ambil data", userData, true));
     }
 
-    @Operation(
-        summary = "Update data pengguna",
-        description = "Memperbarui nama/email pengguna berdasarkan ID pengguna saat ini."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Berhasil update data pengguna", 
-            content = @Content(schema = @Schema(implementation = GeneralResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Request tidak valid", 
-            content = @Content(schema = @Schema())),
-        @ApiResponse(responseCode = "401", description = "Tidak memiliki izin", 
-            content = @Content(schema = @Schema())),
-        @ApiResponse(responseCode = "404", description = "Pengguna tidak ditemukan", 
-            content = @Content(schema = @Schema())),
-        @ApiResponse(responseCode = "500", description = "Kesalahan server", 
-            content = @Content(schema = @Schema()))
-    })
     @PutMapping
     public ResponseEntity<?> updateData(
         @Parameter(description = "ID pengguna saat ini", hidden = true)

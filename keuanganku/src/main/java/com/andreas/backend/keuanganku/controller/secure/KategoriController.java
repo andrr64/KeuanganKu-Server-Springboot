@@ -60,11 +60,9 @@ public class KategoriController {
     @DeleteMapping("/{id_kategori}")
     public ResponseEntity<?> hapusKategori(
             @CurrentUserId UUID idPengguna,
-            @PathVariable("id_kategori") UUID idKategori,
-            @RequestParam("ubahTransaksiKategori") boolean ubahTransaksiKategori,
-            @RequestParam(value = "targetKategori", required = false) UUID targetKategori
+            @PathVariable("id_kategori") UUID idKategori
     ) {
-        kategoriService.hapusKategori(idPengguna, idKategori, ubahTransaksiKategori, targetKategori);
+        kategoriService.hapusKategori(idPengguna, idKategori);
         return ResponseEntity.ok(new GeneralResponse<>("Kategori berhasil dihapus", null, true));
     }
 

@@ -11,14 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.CashflowItem;
+import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
 import com.andreas.backend.keuanganku.service.TransaksiService;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -30,41 +28,32 @@ public class StatistikController {
 
     private final TransaksiService transaksiService;
 
-    @Operation(
-        summary = "Ambil data grafik cashflow",
-        description = "Mengambil data cashflow (pemasukan & pengeluaran) berdasarkan periode: 1=mingguan, 2=bulanan, 3=tahunan"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Berhasil mengambil data cashflow")
-    })
-    @GetMapping("/data-cashflow-tiap-waktu")
+    @GetMapping("/data-cashflow-terhadap-waktu")
     public ResponseEntity<GeneralResponse<List<CashflowItem>>> getGrafikCashflow(
-        @Parameter(hidden = true)
-        @CurrentUserId UUID idPengguna,
-
-        @Parameter(description = "Periode data: 1=mingguan, 2=bulanan, 3=tahunan", example = "1")
-        @RequestParam(name = "periode", defaultValue = "1") int periode
+            @Parameter(hidden = true)
+            @CurrentUserId UUID idPengguna,
+            @Parameter(description = "Periode data: 1=mingguan, 2=bulanan, 3=tahunan", example = "1")
+            @RequestParam(name = "periode", defaultValue = "1") int periode
     ) {
         List<CashflowItem> data = transaksiService.getDataGrafikCashflow(idPengguna, periode);
         return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
     }
 
-    @Operation(
-        summary = "Ambil ringkasan transaksi per kategori",
-        description = "Mengambil ringkasan transaksi berdasarkan kategori untuk periode waktu tertentu: 1=mingguan, 2=bulanan, 3=tahunan"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Berhasil mengambil ringkasan transaksi")
-    })
-    @GetMapping("/data-transaksi-tiap-kategori")
+    @GetMapping("/data-transaksi-terhadap-kategori")
     public ResponseEntity<GeneralResponse<RingkasanTransaksiKategoriResponse>> getRingkasanKategori(
-        @Parameter(hidden = true)
-        @CurrentUserId UUID idPengguna,
-
-        @Parameter(description = "Periode data: 1=mingguan, 2=bulanan, 3=tahunan", example = "1")
-        @RequestParam(name = "periode", defaultValue = "1") int periode
+            @Parameter(hidden = true)
+            @CurrentUserId UUID idPengguna,
+            @Parameter(description = "Periode data: 1=mingguan, 2=bulanan, 3=tahunan", example = "1")
+            @RequestParam(name = "periode", defaultValue = "1") int periode
     ) {
         RingkasanTransaksiKategoriResponse data = transaksiService.getDataTransaksiWaktuTertentu(idPengguna, periode);
         return ResponseEntity.ok(new GeneralResponse<>("OK", data, true));
     }
+
+    @GetMapping("/data-ringkasan-bulan-ini")
+    public ResponseEntity<?> getRingkasanBulan(@CurrentUserId UUID idPengguna) {
+        DashboardResponse response = transaksiService.getRingkasanBulanIni(idPengguna);
+        return ResponseEntity.ok(new GeneralResponse<>("OK", response, true));
+    }
+
 }

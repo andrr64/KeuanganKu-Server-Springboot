@@ -12,6 +12,6 @@ public interface KategoriService {
     List<Kategori> getKategoriByJenis(UUID idPengguna, Integer jenis);
     List<Kategori> getAllKategori(UUID idPengguna);
     void updateKategori(UUID idPengguna, UUID idKategori, String namaBaru);
-    void hapusKategori(UUID idPengguna, UUID idKategori, boolean ubahTransaksi, UUID targetKategoriId);
+    void hapusKategori(UUID idPengguna, UUID idKategori);
     Page<Kategori> getFilteredKategori(UUID idPengguna, int jenis, String keyword, int page, int size);
 }

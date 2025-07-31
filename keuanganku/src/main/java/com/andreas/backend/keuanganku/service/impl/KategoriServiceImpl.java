@@ -91,7 +91,7 @@ public class KategoriServiceImpl implements KategoriService {
     @Override
     public void updateKategori(UUID idPengguna, UUID idKategori, String namaBaru) {
         boolean isSystemcategOry = kategoriRepo.existsByIdAndPenggunaIsNull(idKategori);
-        if (isSystemcategOry){
+        if (isSystemcategOry) {
             throw new IllegalArgumentException("Kategori sistem tidak dapat diperbarui. Harap pilih kategori lain.");
         }
         Kategori kategori = kategoriRepo.findById(idKategori)
@@ -121,42 +121,20 @@ public class KategoriServiceImpl implements KategoriService {
     }
 
     @Override
-    public void hapusKategori(UUID idPengguna, UUID idKategori, boolean ubahTransaksi, UUID targetKategoriId) {
+    public void hapusKategori(UUID idPengguna, UUID idKategori) {
+        // Cari kategori dan pastikan milik pengguna
         Kategori kategoriToDelete = kategoriRepo.findById(idKategori)
                 .filter(k -> k.getPengguna() != null && k.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Kategori tidak ditemukan atau bukan milik pengguna."));
 
+        // Cek apakah kategori ini memiliki transaksi terkait
         List<Transaksi> transaksiList = transaksiRepo.findAllByKategoriId(idKategori);
 
-        if (ubahTransaksi) {
-            if (targetKategoriId == null) {
-                throw new IllegalArgumentException("Target kategori tidak boleh kosong.");
-            }
-
-            if (kategoriToDelete.getId().equals(targetKategoriId)) {
-                throw new IllegalArgumentException("Target kategori tidak boleh sama dengan kategori yang dihapus.");
-            }
-
-            Kategori targetKategori = kategoriRepo.findById(targetKategoriId)
-                    .filter(k -> k.getPengguna() == null || k.getPengguna().getId().equals(idPengguna))
-                    .orElseThrow(() -> new EntityNotFoundException("Target kategori tidak ditemukan."));
-
-            if (!kategoriToDelete.getJenis().equals(targetKategori.getJenis())) {
-                throw new IllegalArgumentException("Jenis kategori harus sama.");
-            }
-
-            for (Transaksi t : transaksiList) {
-                t.setKategori(targetKategori);
-            }
-
-            transaksiRepo.saveAll(transaksiList);
-        } else {
-            if (!transaksiList.isEmpty()) {
-                throw new IllegalArgumentException("Kategori memiliki transaksi. Gunakan opsi ubahTransaksi.");
-            }
+        if (!transaksiList.isEmpty()) {
+            throw new IllegalArgumentException("Kategori tidak dapat dihapus karena masih memiliki transaksi terkait.");
         }
 
+        // Jika tidak ada transaksi, hapus kategori
         kategoriRepo.delete(kategoriToDelete);
     }
-
 }

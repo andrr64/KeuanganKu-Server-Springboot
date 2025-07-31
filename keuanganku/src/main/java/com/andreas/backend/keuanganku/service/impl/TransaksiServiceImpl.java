@@ -455,9 +455,20 @@ public class TransaksiServiceImpl implements TransaksiService {
                 .collect(Collectors.toList());
     }
 
+    @Deprecated
     @Override
-    public DashboardResponse getDashboardData(UUID idPengguna) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDashboardData'");
+    public DashboardResponse getRingkasanBulanIni(UUID idPengguna) {
+        BigDecimal totalSaldo = transaksiRepo.getTotalSaldo(idPengguna);
+        BigDecimal totalPemasukanBulanIni = transaksiRepo.getTotalPemasukanBulanIni(idPengguna);
+        BigDecimal totalPengeluaranBulanIni = transaksiRepo.getTotalPengeluaranBulanIni(idPengguna);
+        BigDecimal cashflowBulanIni = totalPemasukanBulanIni.subtract(totalPengeluaranBulanIni);
+
+        return new DashboardResponse(
+                totalSaldo,
+                totalPemasukanBulanIni,
+                totalPengeluaranBulanIni,
+                cashflowBulanIni
+        );
     }
+
 }

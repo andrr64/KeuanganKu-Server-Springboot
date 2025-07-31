@@ -43,8 +43,8 @@ public class AuthController {
 
         ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
-                .secure(true) // pastikan HTTPS di production
-                .sameSite("Lax")
+                .secure(false) // karena http
+                .sameSite("Lax") // default behavior, cookie tetap dikirim di navigasi biasa
                 .path("/")
                 .maxAge(Duration.ofDays(3))
                 .build();

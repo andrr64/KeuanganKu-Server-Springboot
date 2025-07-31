@@ -15,7 +15,7 @@ import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 
 public interface TransaksiService {
 
-    DashboardResponse getDashboardData(UUID idPengguna);
+    DashboardResponse getRingkasanBulanIni(UUID idPengguna);
 
     public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna);
 

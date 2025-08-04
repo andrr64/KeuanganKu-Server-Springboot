@@ -1,24 +1,22 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
-import java.util.List;
-import java.util.UUID;
-
+import com.andreas.backend.keuanganku.annotation.CurrentUserId;
+import com.andreas.backend.keuanganku.dto.CashflowItem;
+import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
+import com.andreas.backend.keuanganku.dto.response.RingkasanBulanIni;
+import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
+import com.andreas.backend.keuanganku.service.TransaksiService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.andreas.backend.keuanganku.annotation.CurrentUserId;
-import com.andreas.backend.keuanganku.dto.CashflowItem;
-import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
-import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
-import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
-import com.andreas.backend.keuanganku.service.TransaksiService;
-
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/secure/statistik")
@@ -52,8 +50,7 @@ public class StatistikController {
 
     @GetMapping("/data-ringkasan-bulan-ini")
     public ResponseEntity<?> getRingkasanBulan(@CurrentUserId UUID idPengguna) {
-        DashboardResponse response = transaksiService.getRingkasanBulanIni(idPengguna);
+        RingkasanBulanIni response = transaksiService.getRingkasanBulanIni(idPengguna);
         return ResponseEntity.ok(new GeneralResponse<>("OK", response, true));
     }
-
 }

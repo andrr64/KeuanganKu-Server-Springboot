@@ -1,18 +1,5 @@
 package com.andreas.backend.keuanganku.controller.secure;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.andreas.backend.keuanganku.annotation.CurrentUserId;
 import com.andreas.backend.keuanganku.dto.request.AkunRequest;
 import com.andreas.backend.keuanganku.dto.request.UpdateNamaAkunRequest;
@@ -20,9 +7,13 @@ import com.andreas.backend.keuanganku.dto.response.AkunResponse;
 import com.andreas.backend.keuanganku.dto.response.GeneralResponse;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.service.AkunService;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/secure/akun")
@@ -40,7 +31,7 @@ public class AkunController {
         return ResponseEntity.ok(new GeneralResponse<>("Akun berhasil ditambahkan", null, true));
     }
 
-    @PutMapping("/update-nama/{id_akun}")
+    @PatchMapping("/update-nama/{id_akun}")
     public ResponseEntity<?> updateNamaAkun(
             @CurrentUserId UUID idPengguna,
             @PathVariable("id_akun") UUID idAkun,

@@ -1,12 +1,5 @@
 package com.andreas.backend.keuanganku.service.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.andreas.backend.keuanganku.dto.request.AkunRequest;
 import com.andreas.backend.keuanganku.model.Akun;
 import com.andreas.backend.keuanganku.model.Pengguna;
@@ -14,9 +7,14 @@ import com.andreas.backend.keuanganku.repository.AkunRepository;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.repository.TransaksiRepository;
 import com.andreas.backend.keuanganku.service.AkunService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -41,7 +39,7 @@ public class AkunServiceImpl implements AkunService {
         akun.setSaldo(request.getSaldoAwal());
         akun.setAktif(true);
         akun.setPengguna(pengguna);
-        akun.setDibuatPada(LocalDateTime.now());
+        akun.setDibuatPada(OffsetDateTime.now());
 
         return akunRepository.save(akun);
     }

@@ -1,11 +1,10 @@
 package com.andreas.backend.keuanganku.dto.response;
 
+import com.andreas.backend.keuanganku.dto.SumTransaksiKategori;
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.andreas.backend.keuanganku.dto.SumTransaksiKategori;
-
-import lombok.Data;
 
 
 @Data

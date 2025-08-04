@@ -1,18 +1,16 @@
 package com.andreas.backend.keuanganku.service.impl;
 
-import java.util.NoSuchElementException;
-import java.util.UUID;
-
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import com.andreas.backend.keuanganku.dto.request.pengguna.UpdatePenggunaRequest;
 import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.service.PenggunaService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +53,6 @@ public class PenggunaServiceImpl implements PenggunaService {
         pengguna.setNama(nama);
         pengguna.setEmail(email);
         pengguna.setPassword(encodedPassword);
-        pengguna.setDibuatPada(java.time.LocalDateTime.now());
 
         return penggunaRepo.save(pengguna);
     }

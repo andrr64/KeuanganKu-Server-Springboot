@@ -1,11 +1,12 @@
 package com.andreas.backend.keuanganku.dto.request;
 
-import java.math.BigDecimal;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -21,7 +22,7 @@ public class TransaksiRequest {
     private BigDecimal jumlah;
 
     @NotBlank(message = "Tanggal wajib diisi dan dalam format dd/MM/yyyy HH:mm")
-    private String tanggal;
+    private OffsetDateTime tanggal;
 
     private String catatan;
 }

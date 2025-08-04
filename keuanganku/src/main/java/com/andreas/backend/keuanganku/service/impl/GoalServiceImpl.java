@@ -1,15 +1,5 @@
+// service/impl/GoalServiceImpl.java
 package com.andreas.backend.keuanganku.service.impl;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
 import com.andreas.backend.keuanganku.dto.request.goal.GoalRequest;
 import com.andreas.backend.keuanganku.dto.request.goal.UpdateGoalRequest;
@@ -19,9 +9,17 @@ import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.GoalRepository;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.service.GoalService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,20 +37,13 @@ public class GoalServiceImpl implements GoalService {
             throw new IllegalArgumentException("Target harus lebih dari 0");
         }
 
-        // Cek jika nama goal sudah ada (ignore case)
         boolean namaGoalSudahAda = goalRepo.existsByPenggunaIdAndNamaIgnoreCase(userId, request.getNama());
         if (namaGoalSudahAda) {
             throw new IllegalArgumentException("Nama goal sudah digunakan");
         }
 
-        // Parsing tanggal dengan format dd/MM/yyyy
-        LocalDate tanggalTarget;
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            tanggalTarget = LocalDate.parse(request.getTanggalTarget(), formatter);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Tanggal target harus dalam format dd/MM/yyyy");
-        }
+        // Parse ISO 8601 string ke OffsetDateTime
+        OffsetDateTime tanggalTarget = parseIsoDate(request.getTanggalTarget());
 
         Pengguna pengguna = penggunaRepo.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan"));
@@ -90,12 +81,10 @@ public class GoalServiceImpl implements GoalService {
         Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
 
-        // Validasi: minimal satu field harus dikirim
         if (request.getNama() == null && request.getTarget() == null && request.getTanggalTarget() == null) {
             throw new IllegalArgumentException("Minimal satu field harus diisi");
         }
 
-        // Validasi & set nama baru
         if (request.getNama() != null) {
             if (!request.getNama().equalsIgnoreCase(goal.getNama())) {
                 boolean namaSudahAda = goalRepo.existsByPenggunaIdAndNamaIgnoreCase(userId, request.getNama());
@@ -106,7 +95,6 @@ public class GoalServiceImpl implements GoalService {
             goal.setNama(request.getNama());
         }
 
-        // Validasi & set target baru
         if (request.getTarget() != null && request.getTarget().compareTo(BigDecimal.ZERO) > 0) {
             if (goal.getTerkumpul().compareTo(request.getTarget()) > 0) {
                 throw new IllegalArgumentException("Target baru lebih kecil dari jumlah yang sudah terkumpul");
@@ -114,15 +102,10 @@ public class GoalServiceImpl implements GoalService {
             goal.setTarget(request.getTarget());
         }
 
-        // Validasi & set tanggal target baru (format dd/MM/yyyy)
         if (request.getTanggalTarget() != null) {
-            try {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                goal.setTanggalTarget(LocalDate.parse(request.getTanggalTarget(), formatter));
-            } catch (DateTimeParseException e) {
-                throw new IllegalArgumentException("Tanggal harus dalam format dd/MM/yyyy");
-            }
+            goal.setTanggalTarget(parseIsoDate(request.getTanggalTarget()));
         }
+
         goalRepo.save(goal);
     }
 
@@ -176,7 +159,6 @@ public class GoalServiceImpl implements GoalService {
 
         goal.setTerkumpul(totalBaru);
 
-        // Jika setelah dikurangi, uang tidak sama dengan target, maka goal tidak tercapai
         if (totalBaru.compareTo(goal.getTarget()) != 0) {
             goal.setTercapai(false);
         }
@@ -195,4 +177,12 @@ public class GoalServiceImpl implements GoalService {
         return res;
     }
 
+    // Helper: Parse ISO 8601 string ke OffsetDateTime
+    private OffsetDateTime parseIsoDate(String input) {
+        try {
+            return OffsetDateTime.parse(input);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Format tanggal harus ISO 8601 (YYYY-MM-DDTHH:mm:ss+07:00). Diterima: " + input);
+        }
+    }
 }

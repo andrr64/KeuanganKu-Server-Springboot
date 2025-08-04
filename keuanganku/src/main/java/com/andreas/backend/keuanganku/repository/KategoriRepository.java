@@ -1,8 +1,6 @@
 package com.andreas.backend.keuanganku.repository;
 
-import java.util.List;
-import java.util.UUID;
-
+import com.andreas.backend.keuanganku.model.Kategori;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.andreas.backend.keuanganku.model.Kategori;
+import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface KategoriRepository extends JpaRepository<Kategori, UUID> {

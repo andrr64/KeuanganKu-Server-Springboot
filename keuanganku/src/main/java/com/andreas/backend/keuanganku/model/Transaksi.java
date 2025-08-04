@@ -1,18 +1,13 @@
 package com.andreas.backend.keuanganku.model;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import com.andreas.backend.keuanganku.config.TimeConfig;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -23,22 +18,32 @@ public class Transaksi {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal jumlah;
+
     @Column(name = "catatan", length = 255)
     private String catatan;
-    private LocalDateTime tanggal;
-    private LocalDateTime dibuatPada;
+
+    @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE", nullable = false)
+    private OffsetDateTime tanggal;
+
+    @Column(name = "dibuat_pada", columnDefinition = "TIMESTAMP WITH TIME ZONE", nullable = false)
+    private OffsetDateTime dibuatPada;
 
     @ManyToOne
-    @JoinColumn(name = "id_pengguna")
+    @JoinColumn(name = "id_pengguna", nullable = false)
     private Pengguna pengguna;
 
     @ManyToOne
-    @JoinColumn(name = "id_akun")
+    @JoinColumn(name = "id_akun", nullable = false)
     private Akun akun;
 
     @ManyToOne
-    @JoinColumn(name = "id_kategori", nullable= true)
+    @JoinColumn(name = "id_kategori", nullable = true)
     private Kategori kategori;
 
+    @PrePersist
+    protected void onCreate() {
+        dibuatPada = OffsetDateTime.now(TimeConfig.SERVER_TIME_ZONE_OFFSET);
+    }
 }

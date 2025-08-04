@@ -1,12 +1,11 @@
 package com.andreas.backend.keuanganku.service;
 
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-
 import com.andreas.backend.keuanganku.dto.request.goal.GoalRequest;
 import com.andreas.backend.keuanganku.dto.request.goal.UpdateGoalRequest;
 import com.andreas.backend.keuanganku.dto.response.GoalResponse;
+import org.springframework.data.domain.Page;
+
+import java.util.UUID;
 
 public interface GoalService {
     GoalResponse tambahGoal(UUID userId, GoalRequest request);

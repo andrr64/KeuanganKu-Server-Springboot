@@ -1,9 +1,9 @@
 package com.andreas.backend.keuanganku.dto.response;
 
-import java.math.BigDecimal;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor

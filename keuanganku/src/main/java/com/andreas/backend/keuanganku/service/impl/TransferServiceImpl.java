@@ -1,16 +1,5 @@
+// service/impl/TransferServiceImpl.java
 package com.andreas.backend.keuanganku.service.impl;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.andreas.backend.keuanganku.dto.AkunTransfer;
 import com.andreas.backend.keuanganku.dto.request.TransferRequest;
@@ -23,9 +12,17 @@ import com.andreas.backend.keuanganku.repository.AkunRepository;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.repository.TransferRepository;
 import com.andreas.backend.keuanganku.service.TransferService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -36,17 +33,15 @@ public class TransferServiceImpl implements TransferService {
     private final AkunRepository akunRepo;
     private final PenggunaRepository penggunaRepo;
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private TransferResponse toResponse(Transfer t) {
         return new TransferResponse(
-            t.getId(), 
-            new AkunTransfer(t.getDariAkun().getId(), t.getDariAkun().getNama()), 
-            new AkunTransfer(t.getKeAkun().getId(), t.getKeAkun().getNama()),  
-            t.getJumlah(), 
-            t.getTanggal(), 
-            t.getCatatan()
+                t.getId(),
+                new AkunTransfer(t.getDariAkun().getId(), t.getDariAkun().getNama()),
+                new AkunTransfer(t.getKeAkun().getId(), t.getKeAkun().getNama()),
+                t.getJumlah(),
+                t.getTanggal(),
+                t.getCatatan()
         );
     }
 
@@ -69,20 +64,17 @@ public class TransferServiceImpl implements TransferService {
             throw new IllegalArgumentException("Saldo akun pengirim tidak cukup");
         }
 
-        LocalDateTime tanggal;
-        try {
-            tanggal = LocalDateTime.parse(req.getTanggal(), dateTimeFormatter);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Format tanggal tidak valid, gunakan dd/MM/yyyy HH:mm");
-        }
+        // Parse ISO 8601 string ke OffsetDateTime
+        OffsetDateTime tanggal = parseIsoDateTime(req.getTanggal());
 
-        // update saldo
+        // Update saldo
         dari.setSaldo(dari.getSaldo().subtract(req.getJumlah()));
         ke.setSaldo(ke.getSaldo().add(req.getJumlah()));
         akunRepo.saveAll(List.of(dari, ke));
 
         Transfer transfer = new Transfer();
-        transfer.setPengguna(penggunaRepo.findById(idPengguna).orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan")));
+        transfer.setPengguna(penggunaRepo.findById(idPengguna)
+                .orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan")));
         transfer.setDariAkun(dari);
         transfer.setKeAkun(ke);
         transfer.setJumlah(req.getJumlah());
@@ -94,8 +86,8 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     public List<TransferResponse> getAllTransfer(UUID idPengguna, UUID idAkun, String startDate, String endDate, String sort) {
-        LocalDate start = parseDateOrNull(startDate);
-        LocalDate end = parseDateOrNull(endDate);
+        OffsetDateTime start = parseIsoDateOrNull(startDate);
+        OffsetDateTime end = parseIsoDateOrNull(endDate);
 
         List<Transfer> all = transferRepo.findAllByPengguna_Id(idPengguna);
         List<Transfer> hasil = new ArrayList<>();
@@ -107,23 +99,23 @@ public class TransferServiceImpl implements TransferService {
                 continue;
             }
 
-            if (start != null && t.getTanggal().toLocalDate().isBefore(start)) {
+            if (start != null && t.getTanggal().isBefore(start)) {
                 continue;
             }
-            if (end != null && t.getTanggal().toLocalDate().isAfter(end)) {
+            if (end != null && t.getTanggal().isAfter(end)) {
                 continue;
             }
 
             hasil.add(t);
         }
 
-        hasil.sort((a, b) -> "asc".equalsIgnoreCase(sort) ? a.getTanggal().compareTo(b.getTanggal()) : b.getTanggal().compareTo(a.getTanggal()));
+        hasil.sort((a, b) -> "asc".equalsIgnoreCase(sort)
+                ? a.getTanggal().compareTo(b.getTanggal())
+                : b.getTanggal().compareTo(a.getTanggal()));
 
-        List<TransferResponse> res = new ArrayList<>();
-        for (Transfer t : hasil) {
-            res.add(toResponse(t));
-        }
-        return res;
+        return hasil.stream()
+                .map(this::toResponse)
+                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
     @Override
@@ -152,32 +144,27 @@ public class TransferServiceImpl implements TransferService {
         Transfer t = transferRepo.findById(idTransfer)
                 .orElseThrow(() -> new EntityNotFoundException("Transfer tidak ditemukan"));
 
-        // Cek kepemilikan transfer
         if (!t.getPengguna().getId().equals(idPengguna)) {
             throw new IllegalArgumentException("Anda tidak memiliki akses ke transfer ini");
         }
 
         Akun akunDari = akunRepo.findById(t.getDariAkun().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Akun pengirim tidak ditemukan"));
-
         Akun akunKe = akunRepo.findById(t.getKeAkun().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Akun penerima tidak ditemukan"));
 
         BigDecimal jumlah = t.getJumlah();
 
-        // Cek apakah saldo akun penerima cukup untuk dikurangi
         if (akunKe.getSaldo().compareTo(jumlah) < 0) {
             throw new IllegalArgumentException("Saldo akun penerima tidak mencukupi untuk rollback transfer");
         }
 
-        // Rollback saldo
         akunDari.setSaldo(akunDari.getSaldo().add(jumlah));
         akunKe.setSaldo(akunKe.getSaldo().subtract(jumlah));
 
         akunRepo.save(akunDari);
         akunRepo.save(akunKe);
 
-        // Hapus transfer
         transferRepo.delete(t);
     }
 
@@ -193,13 +180,9 @@ public class TransferServiceImpl implements TransferService {
         boolean isUpdated = false;
 
         if (request.getTanggal() != null && !request.getTanggal().isBlank()) {
-            try {
-                LocalDateTime tanggalBaru = LocalDateTime.parse(request.getTanggal(), dateTimeFormatter);
-                transfer.setTanggal(tanggalBaru);
-                isUpdated = true;
-            } catch (DateTimeParseException e) {
-                throw new IllegalArgumentException("Format tanggal harus dd/MM/yyyy HH:mm");
-            }
+            OffsetDateTime tanggalBaru = parseIsoDateTime(request.getTanggal());
+            transfer.setTanggal(tanggalBaru);
+            isUpdated = true;
         }
 
         if (request.getCatatan() != null) {
@@ -215,14 +198,24 @@ public class TransferServiceImpl implements TransferService {
         return toResponse(transfer);
     }
 
-    private LocalDate parseDateOrNull(String input) {
+    // Helper: Parse ISO 8601 string ke OffsetDateTime
+    private OffsetDateTime parseIsoDateTime(String input) {
+        try {
+            return OffsetDateTime.parse(input);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Format tanggal harus ISO 8601 (YYYY-MM-DDTHH:mm:ss+07:00). Diterima: " + input);
+        }
+    }
+
+    // Helper: Parse tanggal awal (start of day)
+    private OffsetDateTime parseIsoDateOrNull(String input) {
         if (input == null || input.isBlank()) {
             return null;
         }
         try {
-            return LocalDate.parse(input, dateFormatter);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Format tanggal harus dd/MM/yyyy");
+            return OffsetDateTime.parse(input + "T00:00:00+07:00"); // Asumsi WIB
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Format tanggal harus YYYY-MM-DD");
         }
     }
 }

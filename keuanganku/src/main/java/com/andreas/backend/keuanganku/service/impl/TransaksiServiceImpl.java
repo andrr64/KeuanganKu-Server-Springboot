@@ -1,31 +1,12 @@
 package com.andreas.backend.keuanganku.service.impl;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Month;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.andreas.backend.keuanganku.SysVar;
+import com.andreas.backend.keuanganku.config.TimeConfig;
 import com.andreas.backend.keuanganku.dto.CashflowItem;
 import com.andreas.backend.keuanganku.dto.SumTransaksiKategori;
 import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
-import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
 import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
+import com.andreas.backend.keuanganku.dto.response.RingkasanBulanIni;
 import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
 import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
 import com.andreas.backend.keuanganku.model.Akun;
@@ -35,10 +16,23 @@ import com.andreas.backend.keuanganku.repository.AkunRepository;
 import com.andreas.backend.keuanganku.repository.KategoriRepository;
 import com.andreas.backend.keuanganku.repository.TransaksiRepository;
 import com.andreas.backend.keuanganku.service.TransaksiService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -50,40 +44,31 @@ public class TransaksiServiceImpl implements TransaksiService {
     private final KategoriRepository kategoriRepo;
     private final TransaksiRepository transaksiRepo;
 
+    // Gunakan konstanta dari TimeConfig
+    private static final ZoneOffset SERVER_OFFSET = TimeConfig.SERVER_TIME_ZONE_OFFSET;
+
     @Override
     public void tambahTransaksi(UUID idPengguna, TransaksiRequest request) {
-        // 🛡️ Validasi awal request
         if (request == null) {
             throw new IllegalArgumentException("Request tidak boleh null");
         }
 
-        // 🧮 Validasi jumlah
         if (request.getJumlah() == null || request.getJumlah().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Jumlah harus lebih dari 0");
         }
 
-        // 🏦 Validasi akun milik pengguna
         UUID idAkun = UUID.fromString(request.getIdAkun());
         Akun akun = akunRepo.findById(idAkun)
                 .filter(a -> a.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Akun tidak ditemukan atau bukan milik pengguna"));
 
-        // 🗂️ Validasi kategori (kategori sistem atau milik pengguna)
         UUID idKategori = UUID.fromString(request.getIdKategori());
         Kategori kategori = kategoriRepo.findById(idKategori)
                 .filter(k -> k.getPengguna() == null || k.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Kategori tidak ditemukan atau bukan milik pengguna"));
 
-        // 🕒 Parsing tanggal
-        LocalDateTime tanggal;
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            tanggal = LocalDateTime.parse(request.getTanggal(), formatter);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Format tanggal tidak valid. Gunakan dd/MM/yyyy HH:mm");
-        }
+        OffsetDateTime tanggal = request.getTanggal();
 
-        // 💰 Validasi dan update saldo akun
         if (SysVar.isPengeluaran(kategori.getJenis())) {
             if (akun.getSaldo().compareTo(request.getJumlah()) < 0) {
                 throw new IllegalArgumentException("Saldo tidak mencukupi untuk pengeluaran (" + akun.getSaldo() + ")");
@@ -95,57 +80,26 @@ public class TransaksiServiceImpl implements TransaksiService {
             throw new IllegalArgumentException("Jenis kategori tidak valid");
         }
 
-        // 💾 Simpan saldo akun terbaru
         akunRepo.save(akun);
 
-        // 📝 Buat dan simpan transaksi
         Transaksi transaksi = new Transaksi();
         transaksi.setAkun(akun);
         transaksi.setKategori(kategori);
         transaksi.setJumlah(request.getJumlah());
-        transaksi.setTanggal(tanggal);
+        transaksi.setTanggal(tanggal); // ✅ waktu asli dari user, dengan offsetnya
         transaksi.setCatatan(request.getCatatan());
-        transaksi.setDibuatPada(LocalDateTime.now());
-        transaksi.setPengguna(akun.getPengguna()); // atau bisa juga ambil dari penggunaRepo.findById(idPengguna)
+        transaksi.setDibuatPada(OffsetDateTime.now(SERVER_OFFSET)); // waktu buat, bebas pakai server
+        transaksi.setPengguna(akun.getPengguna());
+
         transaksiRepo.save(transaksi);
     }
 
     @Override
-    public List<TransaksiResponse> getFilteredTransaksi(UUID idPengguna, Integer jenis, UUID idAkun) {
-        List<Transaksi> transaksiList;
-
-        if (idAkun != null) {
-            // Jika idAkun ada → filter berdasarkan akun saja
-            transaksiList = transaksiRepo.findByPenggunaAndAkun(idPengguna, idAkun);
-        } else if (jenis != null) {
-            // Jika hanya jenis → filter berdasarkan jenis saja
-            transaksiList = transaksiRepo.findByPenggunaAndJenis(idPengguna, jenis);
-        } else {
-            // Jika tidak ada dua-duanya → ambil semua
-            transaksiList = transaksiRepo.findByPengguna(idPengguna);
-        }
-
-        return transaksiList.stream().map(t -> new TransaksiResponse(
-                t.getId(),
-                t.getAkun().getId(),
-                t.getKategori().getNama(),
-                t.getAkun().getNama(),
-                t.getKategori().getJenis(),
-                t.getJumlah(),
-                t.getCatatan(),
-                t.getTanggal(),
-                t.getKategori()
-        )).toList();
-    }
-
-    @Override
     public void updateTransaksi(UUID idPengguna, UUID idTransaksi, TransaksiRequest request) {
-        // 1. Validate and get existing transaction
         Transaksi transaksiLama = transaksiRepo.findById(idTransaksi)
                 .filter(t -> t.getAkun().getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Transaksi tidak ditemukan atau bukan milik pengguna"));
 
-        // 2. Get new category and validate
         UUID idKategoriBaru = UUID.fromString(request.getIdKategori());
         Kategori kategoriBaru = kategoriRepo.findById(idKategoriBaru)
                 .filter(k -> k.getPengguna() == null || k.getPengguna().getId().equals(idPengguna))
@@ -155,54 +109,39 @@ public class TransaksiServiceImpl implements TransaksiService {
             throw new IllegalArgumentException("Jenis kategori tidak valid. Hanya boleh 1 (pengeluaran) atau 2 (pemasukan)");
         }
 
-        // 3. Get new account and validate
         UUID idAkunBaru = UUID.fromString(request.getIdAkun());
         Akun akunBaru = akunRepo.findById(idAkunBaru)
                 .filter(a -> a.getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Akun tidak valid atau bukan milik pengguna"));
 
-        // 4. Parse date
-        LocalDateTime tanggal;
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            tanggal = LocalDateTime.parse(request.getTanggal(), formatter);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Format tanggal tidak valid. Gunakan dd/MM/yyyy HH:mm");
-        }
+        OffsetDateTime tanggal = request.getTanggal().withOffsetSameInstant(SERVER_OFFSET);
 
-        // 5. Handle account balance changes
         Akun akunLama = transaksiLama.getAkun();
         BigDecimal jumlahLama = transaksiLama.getJumlah();
         BigDecimal jumlahBaru = request.getJumlah();
 
-        // Rollback old transaction effect
+        // Rollback old effect
         if (transaksiLama.getKategori().getJenis() == 1) {
-            // Old transaction was expense - add back the amount
             akunLama.setSaldo(akunLama.getSaldo().add(jumlahLama));
         } else {
-            // Old transaction was income - subtract the amount
             akunLama.setSaldo(akunLama.getSaldo().subtract(jumlahLama));
         }
 
-        // Apply new transaction effect
+        // Apply new effect
         if (kategoriBaru.getJenis() == 1) {
-            // New transaction is expense
             if (akunBaru.getSaldo().compareTo(jumlahBaru) < 0) {
                 throw new IllegalArgumentException("Saldo tidak mencukupi untuk pengeluaran");
             }
             akunBaru.setSaldo(akunBaru.getSaldo().subtract(jumlahBaru));
         } else {
-            // New transaction is income
             akunBaru.setSaldo(akunBaru.getSaldo().add(jumlahBaru));
         }
 
-        // 6. Save account changes
         akunRepo.save(akunLama);
         if (!akunLama.getId().equals(akunBaru.getId())) {
             akunRepo.save(akunBaru);
         }
 
-        // 7. Update transaction
         transaksiLama.setAkun(akunBaru);
         transaksiLama.setKategori(kategoriBaru);
         transaksiLama.setJumlah(jumlahBaru);
@@ -214,7 +153,6 @@ public class TransaksiServiceImpl implements TransaksiService {
 
     @Override
     public void hapusTransaksi(UUID idPengguna, UUID idTransaksi) {
-        // Ambil transaksi
         Transaksi transaksi = transaksiRepo.findById(idTransaksi)
                 .filter(t -> t.getAkun().getPengguna().getId().equals(idPengguna))
                 .orElseThrow(() -> new EntityNotFoundException("Transaksi tidak ditemukan atau bukan milik pengguna"));
@@ -234,17 +172,14 @@ public class TransaksiServiceImpl implements TransaksiService {
             throw new IllegalArgumentException("Jenis kategori tidak boleh null");
         }
 
-        // Validasi jumlah dan saldo
         if (transaksi.getJumlah() == null || akun.getSaldo() == null) {
             throw new IllegalStateException("Jumlah transaksi atau saldo akun tidak boleh null");
         }
 
-        // Logika berdasarkan jenis kategori
         switch (jenis) {
-            case 1 -> // Pengeluaran
-                akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah())); // rollback saldo
+            case 1 ->
+                akun.setSaldo(akun.getSaldo().add(transaksi.getJumlah()));
             case 2 -> {
-                // Pemasukan
                 if (akun.getSaldo().compareTo(transaksi.getJumlah()) < 0) {
                     throw new IllegalArgumentException("Saldo tidak mencukupi untuk menghapus transaksi pemasukan ini");
                 }
@@ -254,29 +189,21 @@ public class TransaksiServiceImpl implements TransaksiService {
                 throw new IllegalArgumentException("Jenis kategori tidak valid (harus 1 atau 2)");
         }
 
-        akunRepo.save(akun);             // Simpan update saldo
-        transaksiRepo.delete(transaksi); // Hapus transaksi
+        akunRepo.save(akun);
+        transaksiRepo.delete(transaksi);
     }
 
     @Override
     public Page<TransaksiResponse> getFilteredTransaksi(
             UUID idPengguna,
             String keyword,
-            LocalDate startDate,
-            LocalDate endDate,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
             Integer jenis,
             UUID idAkun,
             int page,
             int size
     ) {
-        LocalDateTime start = startDate != null
-                ? startDate.atStartOfDay()
-                : LocalDate.of(2000, 1, 1).atStartOfDay();
-
-        LocalDateTime end = endDate != null
-                ? endDate.atTime(23, 59, 59)
-                : LocalDate.now().atTime(23, 59, 59);
-
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.max(size, 1),
@@ -287,8 +214,8 @@ public class TransaksiServiceImpl implements TransaksiService {
 
         Page<Transaksi> transaksiPage = transaksiRepo.findFilteredWithSearch(
                 idPengguna,
-                start,
-                end,
+                startDate,
+                endDate,
                 jenis,
                 idAkun,
                 formattedKeyword,
@@ -311,9 +238,7 @@ public class TransaksiServiceImpl implements TransaksiService {
     @Override
     public List<TransaksiResponse> getRecentTransaksi(UUID idPengguna, int jumlah) {
         Pageable pageable = PageRequest.of(0, jumlah, Sort.by("tanggal").descending());
-
         Page<Transaksi> page = transaksiRepo.findByPengguna_Id(idPengguna, pageable);
-
         return page.getContent().stream()
                 .map(t -> new TransaksiResponse(
                 t.getId(),
@@ -333,15 +258,17 @@ public class TransaksiServiceImpl implements TransaksiService {
     public List<CashflowItem> getDataGrafikCashflow(UUID idPengguna, int periode) {
         List<CashflowItem> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        YearMonth currentYearMonth = YearMonth.from(today);
 
         switch (periode) {
             case 1 -> {
                 // Mingguan (7 hari terakhir)
                 for (int i = 6; i >= 0; i--) {
                     LocalDate tanggal = today.minusDays(i);
-                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
-                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
+                    OffsetDateTime start = tanggal.atStartOfDay().atOffset(SERVER_OFFSET);
+                    OffsetDateTime end = tanggal.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+
+                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 1);
 
                     result.add(new CashflowItem(
                             tanggal.getDayOfMonth() + " " + tanggal.getMonth().name().substring(0, 3),
@@ -352,11 +279,15 @@ public class TransaksiServiceImpl implements TransaksiService {
             }
             case 2 -> {
                 // Bulanan
-                int daysInMonth = currentYearMonth.lengthOfMonth();
+                YearMonth currentMonth = YearMonth.from(today);
+                int daysInMonth = currentMonth.lengthOfMonth();
                 for (int day = 1; day <= daysInMonth; day++) {
-                    LocalDate tanggal = LocalDate.of(today.getYear(), today.getMonth(), day);
-                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 2);
-                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, tanggal, 1);
+                    LocalDate tanggal = today.withDayOfMonth(day);
+                    OffsetDateTime start = tanggal.atStartOfDay().atOffset(SERVER_OFFSET);
+                    OffsetDateTime end = tanggal.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+
+                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 1);
 
                     result.add(new CashflowItem(
                             String.valueOf(day),
@@ -368,8 +299,14 @@ public class TransaksiServiceImpl implements TransaksiService {
             default -> {
                 // Tahunan
                 for (int i = 1; i <= 12; i++) {
-                    BigDecimal pemasukan = transaksiRepo.getTotalByBulan(idPengguna, i, 2);
-                    BigDecimal pengeluaran = transaksiRepo.getTotalByBulan(idPengguna, i, 1);
+                    LocalDate awalBulan = LocalDate.of(today.getYear(), i, 1);
+                    LocalDate akhirBulan = awalBulan.withDayOfMonth(awalBulan.lengthOfMonth());
+
+                    OffsetDateTime start = awalBulan.atStartOfDay().atOffset(SERVER_OFFSET);
+                    OffsetDateTime end = akhirBulan.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+
+                    BigDecimal pemasukan = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 2);
+                    BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 1);
 
                     result.add(new CashflowItem(
                             Month.of(i).name().substring(0, 3),
@@ -379,55 +316,59 @@ public class TransaksiServiceImpl implements TransaksiService {
                 }
             }
         }
-
         return result;
     }
 
     @Override
     public RingkasanTransaksiKategoriResponse getDataTransaksiWaktuTertentu(UUID idPengguna, int periode) {
         LocalDate today = LocalDate.now();
-        LocalDateTime startDateTime;
-        LocalDateTime endDateTime = today.atTime(LocalTime.MAX);
+        OffsetDateTime startDateTime;
+        OffsetDateTime endDateTime;
 
-        startDateTime = switch (periode) {
-            case 1 ->
-                today.minusDays(6).atStartOfDay();      // 7 hari terakhir
-            case 2 ->
-                today.withDayOfMonth(1).atStartOfDay();   // Bulan ini
-            case 3 ->
-                today.withDayOfYear(1).atStartOfDay();    // Tahun ini
-            default ->
-                today.atStartOfDay();                   // Hari ini
-        };
+        switch (periode) {
+            case 1 -> {
+                // Minggu ini: dari hari Senin sampai sekarang
+                LocalDate startOfWeek = today.with(java.time.DayOfWeek.MONDAY);
+                startDateTime = startOfWeek.atStartOfDay().atOffset(SERVER_OFFSET);
+                endDateTime = today.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+            }
+            case 2 -> {
+                // Bulan ini: dari tanggal 1 sampai akhir bulan
+                LocalDate startOfMonth = today.withDayOfMonth(1);
+                LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+                startDateTime = startOfMonth.atStartOfDay().atOffset(SERVER_OFFSET);
+                endDateTime = endOfMonth.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+            }
+            case 3 -> {
+                // Tahun ini: dari Januari sampai Desember
+                LocalDate startOfYear = today.withDayOfYear(1);
+                LocalDate endOfYear = LocalDate.of(today.getYear(), 12, 31);
+                startDateTime = startOfYear.atStartOfDay().atOffset(SERVER_OFFSET);
+                endDateTime = endOfYear.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+            }
+            default -> {
+                // Hari ini
+                startDateTime = today.atStartOfDay().atOffset(SERVER_OFFSET);
+                endDateTime = today.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
+            }
+        }
 
-        // Repository call (asumsi nama method sudah benar)
         List<Object[]> hasilRepo = transaksiRepo.getRingkasanKategori(idPengguna, startDateTime, endDateTime);
-
-        // 2. Buat instance dari DTO Respons utama
         RingkasanTransaksiKategoriResponse response = new RingkasanTransaksiKategoriResponse();
-
         for (Object[] row : hasilRepo) {
             String namaKategori = (String) row[0];
             BigDecimal total = (BigDecimal) row[1];
             Integer jenis = (Integer) row[2];
-
-            // Buat DTO item untuk setiap baris data
             SumTransaksiKategori item = new SumTransaksiKategori(namaKategori, total);
-
-            // Masukkan item ke list yang sesuai di dalam objek respons
             if (jenis == 1) {
                 response.getPengeluaran().add(item);
             } else if (jenis == 2) {
                 response.getPemasukan().add(item);
             }
         }
-
-        // 3. Perbaiki logika sorting menjadi type-safe
-        Comparator<SumTransaksiKategori> valueComparator = (a, b) -> b.getValue().compareTo(a.getValue());
+        Comparator<SumTransaksiKategori> valueComparator = Comparator.comparing(SumTransaksiKategori::getValue).reversed();
         response.getPemasukan().sort(valueComparator);
         response.getPengeluaran().sort(valueComparator);
-
-        // 4. Kembalikan objek DTO yang sudah lengkap
         return response;
     }
 
@@ -435,10 +376,8 @@ public class TransaksiServiceImpl implements TransaksiService {
     public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna) {
         LocalDate now = LocalDate.now();
         LocalDate awalBulan = now.withDayOfMonth(1);
-
-        // Convert LocalDate to LocalDateTime at start and end of day
-        LocalDateTime startDateTime = awalBulan.atStartOfDay();
-        LocalDateTime endDateTime = now.atTime(LocalTime.MAX);
+        OffsetDateTime startDateTime = awalBulan.atStartOfDay().atOffset(SERVER_OFFSET);
+        OffsetDateTime endDateTime = now.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
 
         List<Object[]> data = transaksiRepo.getTotalPengeluaranByKategoriBetween(
                 idPengguna,
@@ -448,22 +387,20 @@ public class TransaksiServiceImpl implements TransaksiService {
 
         return data.stream()
                 .map(obj -> new KategoriStatistikResponse(
-                (String) obj[0], // namaKategori
-                ((BigDecimal) obj[1]) // totalPengeluaran as BigDecimal
+                (String) obj[0],
+                ((BigDecimal) obj[1])
         ))
-                .sorted((a, b) -> b.getTotalPengeluaran().compareTo(a.getTotalPengeluaran())) // Sort descending
+                .sorted((a, b) -> b.getTotalPengeluaran().compareTo(a.getTotalPengeluaran()))
                 .collect(Collectors.toList());
     }
 
-    @Deprecated
     @Override
-    public DashboardResponse getRingkasanBulanIni(UUID idPengguna) {
+    public RingkasanBulanIni getRingkasanBulanIni(UUID idPengguna) {
         BigDecimal totalSaldo = transaksiRepo.getTotalSaldo(idPengguna);
         BigDecimal totalPemasukanBulanIni = transaksiRepo.getTotalPemasukanBulanIni(idPengguna);
         BigDecimal totalPengeluaranBulanIni = transaksiRepo.getTotalPengeluaranBulanIni(idPengguna);
         BigDecimal cashflowBulanIni = totalPemasukanBulanIni.subtract(totalPengeluaranBulanIni);
-
-        return new DashboardResponse(
+        return new RingkasanBulanIni(
                 totalSaldo,
                 totalPemasukanBulanIni,
                 totalPengeluaranBulanIni,
@@ -471,4 +408,34 @@ public class TransaksiServiceImpl implements TransaksiService {
         );
     }
 
+    @Override
+    public List<TransaksiResponse> getFilteredTransaksi(UUID idPengguna, Integer jenis, UUID idAkun) {
+        List<Transaksi> transaksiList;
+
+        if (idAkun != null) {
+            // Jika idAkun diberikan, filter berdasarkan akun
+            transaksiList = transaksiRepo.findByPenggunaAndAkun(idPengguna, idAkun);
+        } else if (jenis != null) {
+            // Jika hanya jenis diberikan, filter berdasarkan jenis
+            transaksiList = transaksiRepo.findByPenggunaAndJenis(idPengguna, jenis);
+        } else {
+            // Jika tidak ada filter, ambil semua transaksi milik pengguna
+            transaksiList = transaksiRepo.findByPengguna(idPengguna);
+        }
+
+        // Konversi ke DTO Response
+        return transaksiList.stream()
+                .map(t -> new TransaksiResponse(
+                t.getId(),
+                t.getAkun().getId(),
+                t.getKategori() != null ? t.getKategori().getNama() : "Tanpa Kategori",
+                t.getAkun().getNama(),
+                t.getKategori() != null ? t.getKategori().getJenis() : 0,
+                t.getJumlah(),
+                t.getCatatan(),
+                t.getTanggal(),
+                t.getKategori()
+        ))
+                .collect(Collectors.toList());
+    }
 }

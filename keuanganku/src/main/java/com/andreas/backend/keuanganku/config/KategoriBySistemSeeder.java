@@ -1,12 +1,11 @@
 package com.andreas.backend.keuanganku.config;
 
-import java.util.List;
-
+import com.andreas.backend.keuanganku.model.Kategori;
+import com.andreas.backend.keuanganku.repository.KategoriRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import com.andreas.backend.keuanganku.model.Kategori;
-import com.andreas.backend.keuanganku.repository.KategoriRepository;
+import java.util.List;
 
 @Component
 public class KategoriBySistemSeeder implements CommandLineRunner {

@@ -1,8 +1,8 @@
 package com.andreas.backend.keuanganku.dto.request.goal;
 
-import java.math.BigDecimal;
-
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class UpdateGoalRequest {

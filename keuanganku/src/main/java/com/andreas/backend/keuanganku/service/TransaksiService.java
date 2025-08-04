@@ -1,21 +1,20 @@
 package com.andreas.backend.keuanganku.service;
 
-import java.time.LocalDate;
+import com.andreas.backend.keuanganku.dto.CashflowItem;
+import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
+import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
+import com.andreas.backend.keuanganku.dto.response.RingkasanBulanIni;
+import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
+import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
+import org.springframework.data.domain.Page;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-
-import com.andreas.backend.keuanganku.dto.CashflowItem;
-import com.andreas.backend.keuanganku.dto.request.TransaksiRequest;
-import com.andreas.backend.keuanganku.dto.response.DashboardResponse;
-import com.andreas.backend.keuanganku.dto.response.KategoriStatistikResponse;
-import com.andreas.backend.keuanganku.dto.response.RingkasanTransaksiKategoriResponse;
-import com.andreas.backend.keuanganku.dto.response.TransaksiResponse;
-
 public interface TransaksiService {
 
-    DashboardResponse getRingkasanBulanIni(UUID idPengguna);
+    RingkasanBulanIni getRingkasanBulanIni(UUID idPengguna);
 
     public List<KategoriStatistikResponse> getPengeluaranPerKategoriBulanIni(UUID idPengguna);
 
@@ -36,8 +35,8 @@ public interface TransaksiService {
     Page<TransaksiResponse> getFilteredTransaksi(
             UUID idPengguna,
             String keyword,
-            LocalDate startDate,
-            LocalDate endDate,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
             Integer jenis,
             UUID idAkun,
             int page,

@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
@@ -18,6 +18,6 @@ public class DetailTransferResponse {
     private UUID idKeAkun;
     private String namaKeAkun;
     private BigDecimal jumlah;
-    private LocalDateTime tanggal;
+    private OffsetDateTime tanggal;
     private String catatan;
 }

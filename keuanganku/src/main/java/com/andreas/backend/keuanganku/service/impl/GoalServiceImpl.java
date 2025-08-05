@@ -1,6 +1,18 @@
 // service/impl/GoalServiceImpl.java
 package com.andreas.backend.keuanganku.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.andreas.backend.keuanganku.config.TimeConfig;
 import com.andreas.backend.keuanganku.dto.request.goal.GoalRequest;
 import com.andreas.backend.keuanganku.dto.request.goal.UpdateGoalRequest;
 import com.andreas.backend.keuanganku.dto.response.GoalResponse;
@@ -9,17 +21,9 @@ import com.andreas.backend.keuanganku.model.Pengguna;
 import com.andreas.backend.keuanganku.repository.GoalRepository;
 import com.andreas.backend.keuanganku.repository.PenggunaRepository;
 import com.andreas.backend.keuanganku.service.GoalService;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -42,11 +46,16 @@ public class GoalServiceImpl implements GoalService {
             throw new IllegalArgumentException("Nama goal sudah digunakan");
         }
 
-        // Parse ISO 8601 string ke OffsetDateTime
-        OffsetDateTime tanggalTarget = parseIsoDate(request.getTanggalTarget());
+        if (request.getTanggalTarget() == null) {
+            throw new IllegalArgumentException("Tanggal target harus diisi");
+        }
 
         Pengguna pengguna = penggunaRepo.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan"));
+
+        // Konversi LocalDate ke OffsetDateTime (set ke akhir hari, misal: 23:59:59)
+        LocalDateTime localDateTime = request.getTanggalTarget().atTime(23, 59, 59);
+        OffsetDateTime tanggalTarget = localDateTime.atOffset(TimeConfig.SERVER_TIME_ZONE_OFFSET);
 
         Goal goal = new Goal();
         goal.setPengguna(pengguna);

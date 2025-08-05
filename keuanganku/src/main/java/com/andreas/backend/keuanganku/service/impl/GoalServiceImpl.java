@@ -4,7 +4,6 @@ package com.andreas.backend.keuanganku.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -70,22 +69,6 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
-    public void updateStatusTercapai(UUID userId, UUID id, boolean status) {
-        Goal goal = goalRepo.findByIdAndPengguna_Id(id, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
-
-        if (status) {
-            goal.setTercapai(true);
-            goal.setTerkumpul(goal.getTarget());
-        } else {
-            goal.setTercapai(false);
-            goal.setTerkumpul(BigDecimal.ZERO);
-        }
-
-        goalRepo.save(goal);
-    }
-
-    @Override
     public void updateGoal(UUID userId, UUID goalId, UpdateGoalRequest request) {
         Goal goal = goalRepo.findByIdAndPengguna_Id(goalId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
@@ -112,7 +95,26 @@ public class GoalServiceImpl implements GoalService {
         }
 
         if (request.getTanggalTarget() != null) {
-            goal.setTanggalTarget(parseIsoDate(request.getTanggalTarget()));
+            // === Sama seperti di tambahGoal ===
+            LocalDateTime localDateTime = request.getTanggalTarget().atTime(23, 59, 59);
+            OffsetDateTime tanggalTarget = localDateTime.atOffset(TimeConfig.SERVER_TIME_ZONE_OFFSET);
+            goal.setTanggalTarget(tanggalTarget);
+        }
+
+        goalRepo.save(goal);
+    }
+
+    @Override
+    public void updateStatusTercapai(UUID userId, UUID id, boolean status) {
+        Goal goal = goalRepo.findByIdAndPengguna_Id(id, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Goal tidak ditemukan"));
+
+        if (status) {
+            goal.setTercapai(true);
+            goal.setTerkumpul(goal.getTarget());
+        } else {
+            goal.setTercapai(false);
+            goal.setTerkumpul(BigDecimal.ZERO);
         }
 
         goalRepo.save(goal);
@@ -186,12 +188,4 @@ public class GoalServiceImpl implements GoalService {
         return res;
     }
 
-    // Helper: Parse ISO 8601 string ke OffsetDateTime
-    private OffsetDateTime parseIsoDate(String input) {
-        try {
-            return OffsetDateTime.parse(input);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Format tanggal harus ISO 8601 (YYYY-MM-DDTHH:mm:ss+07:00). Diterima: " + input);
-        }
-    }
 }

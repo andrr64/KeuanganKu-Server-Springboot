@@ -1,5 +1,27 @@
 package com.andreas.backend.keuanganku.service.impl;
 
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.OffsetDateTime;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.andreas.backend.keuanganku.SysVar;
 import com.andreas.backend.keuanganku.config.TimeConfig;
 import com.andreas.backend.keuanganku.dto.CashflowItem;
@@ -16,23 +38,10 @@ import com.andreas.backend.keuanganku.repository.AkunRepository;
 import com.andreas.backend.keuanganku.repository.KategoriRepository;
 import com.andreas.backend.keuanganku.repository.TransaksiRepository;
 import com.andreas.backend.keuanganku.service.TransaksiService;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -258,12 +267,13 @@ public class TransaksiServiceImpl implements TransaksiService {
     public List<CashflowItem> getDataGrafikCashflow(UUID idPengguna, int periode) {
         List<CashflowItem> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
-
         switch (periode) {
             case 1 -> {
-                // Mingguan (7 hari terakhir)
-                for (int i = 6; i >= 0; i--) {
-                    LocalDate tanggal = today.minusDays(i);
+                // Mingguan (Senin sampai Minggu)
+                LocalDate senin = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+                for (int i = 0; i < 7; i++) {
+                    LocalDate tanggal = senin.plusDays(i);
                     OffsetDateTime start = tanggal.atStartOfDay().atOffset(SERVER_OFFSET);
                     OffsetDateTime end = tanggal.atTime(LocalTime.MAX).atOffset(SERVER_OFFSET);
 
@@ -271,7 +281,7 @@ public class TransaksiServiceImpl implements TransaksiService {
                     BigDecimal pengeluaran = transaksiRepo.getTotalByTanggal(idPengguna, start, end, 1);
 
                     result.add(new CashflowItem(
-                            tanggal.getDayOfMonth() + " " + tanggal.getMonth().name().substring(0, 3),
+                            String.valueOf(i + 1), // Index 1-7 (Sen-Min)
                             pemasukan.doubleValue(),
                             pengeluaran.doubleValue()
                     ));

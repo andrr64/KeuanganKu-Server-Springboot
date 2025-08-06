@@ -34,13 +34,13 @@ public class Goal {
     @Column(nullable = false, length = 255)
     private String nama;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(nullable = true, precision = 19, scale = 2)
     private BigDecimal target;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(nullable = true, precision = 19, scale = 2)
     private BigDecimal terkumpul;
 
-    @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE", nullable = false)
+    @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE", nullable = true)
     private OffsetDateTime tanggalTarget;
 
     @Column(nullable = false)

@@ -1,10 +1,10 @@
 package com.andreas.backend.keuanganku.dto.response;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import lombok.Data;
 
 @Data
 public class GoalResponse {

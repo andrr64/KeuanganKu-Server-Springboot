@@ -36,30 +36,25 @@ public class GoalServiceImpl implements GoalService {
         if (request.getNama() == null || request.getNama().isBlank()) {
             throw new IllegalArgumentException("Nama tidak boleh kosong");
         }
-        if (request.getTarget() == null || request.getTarget().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Target harus lebih dari 0");
-        }
 
         boolean namaGoalSudahAda = goalRepo.existsByPenggunaIdAndNamaIgnoreCase(userId, request.getNama());
         if (namaGoalSudahAda) {
             throw new IllegalArgumentException("Nama goal sudah digunakan");
         }
 
-        if (request.getTanggalTarget() == null) {
-            throw new IllegalArgumentException("Tanggal target harus diisi");
-        }
-
         Pengguna pengguna = penggunaRepo.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Pengguna tidak ditemukan"));
 
-        // Konversi LocalDate ke OffsetDateTime (set ke akhir hari, misal: 23:59:59)
-        LocalDateTime localDateTime = request.getTanggalTarget().atTime(23, 59, 59);
-        OffsetDateTime tanggalTarget = localDateTime.atOffset(TimeConfig.SERVER_TIME_ZONE_OFFSET);
+        OffsetDateTime tanggalTarget = null;
+        if (request.getTanggalTarget() != null) {
+            LocalDateTime localDateTime = request.getTanggalTarget().atTime(23, 59, 59);
+            tanggalTarget = localDateTime.atOffset(TimeConfig.SERVER_TIME_ZONE_OFFSET);
+        }
 
         Goal goal = new Goal();
         goal.setPengguna(pengguna);
         goal.setNama(request.getNama());
-        goal.setTarget(request.getTarget());
+        goal.setTarget(request.getTarget()); // juga bisa null
         goal.setTerkumpul(BigDecimal.ZERO);
         goal.setTanggalTarget(tanggalTarget);
         goal.setTercapai(false);

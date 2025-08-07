@@ -89,11 +89,13 @@ public class GoalServiceImpl implements GoalService {
             goal.setTarget(request.getTarget());
         }
 
+        // Support untuk mengubah tanggal target atau menghapusnya (set null)
         if (request.getTanggalTarget() != null) {
-            // === Sama seperti di tambahGoal ===
             LocalDateTime localDateTime = request.getTanggalTarget().atTime(23, 59, 59);
             OffsetDateTime tanggalTarget = localDateTime.atOffset(TimeConfig.SERVER_TIME_ZONE_OFFSET);
             goal.setTanggalTarget(tanggalTarget);
+        } else { // Asumsi ada method untuk cek explicit null
+            goal.setTanggalTarget(null);
         }
 
         goalRepo.save(goal);
